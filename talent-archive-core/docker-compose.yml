@@ -1,0 +1,20 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: talent_archive_postgres
+    restart: unless-stopped
+    ports:
+      - "55433:5432"
+    environment:
+      POSTGRES_DB: talent_archive_db
+      POSTGRES_USER: talent_user
+      POSTGRES_PASSWORD: talent_password
+    volumes:
+      - ta_pgdata_20260107_v1:/var/lib/postgresql/data
+      - ./sql:/docker-entrypoint-initdb.d
+
+volumes:
+  ta_pgdata_20260107_v1:
+    name: ta_pgdata_20260107_v1
