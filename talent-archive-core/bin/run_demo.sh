@@ -69,14 +69,14 @@ resume_alias_hits as (
   from rb_alias_map m, ins_resume r
   where m.baseline_set_id = {baseline_set_id}
     and m.status = 'active'
-    and position(m.alias in r.raw_text) > 0
+    and position(lower(m.alias) in lower(r.raw_text)) > 0
 ),
 jd_alias_hits as (
   select distinct m.canonical
   from rb_alias_map m, ins_jd j
   where m.baseline_set_id = {baseline_set_id}
     and m.status = 'active'
-    and position(m.alias in j.raw_text) > 0
+    and position(lower(m.alias) in lower(j.raw_text)) > 0
 ),
 
 -- Rule B: for skill/* terms, also allow direct match by the "tail" token (e.g., skill/python -> match "python")
