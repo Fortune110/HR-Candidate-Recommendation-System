@@ -134,21 +134,48 @@ jd_norm as (
 ),
 
 -- Evidence after baseline enforcement
+-- Pick a single best evidence per canonical:
+-- 1) Prefer via='alias' over via='tail'
+-- 2) Prefer longer hit string (more specific)
 resume_evidence as (
-  select distinct e.hit, e.canonical, e.via
-  from resume_raw_evidence e
-  join rb_baseline_term t
-    on t.baseline_set_id = {baseline_set_id}
-   and t.status = 'active'
-   and t.canonical = e.canonical
+  select hit, canonical, via
+  from (
+    select
+      e.hit, e.canonical, e.via,
+      row_number() over (
+        partition by e.canonical
+        order by
+          case when e.via='alias' then 0 else 1 end,
+          length(e.hit) desc,
+          e.hit asc
+      ) as rn
+    from resume_raw_evidence e
+    join rb_baseline_term t
+      on t.baseline_set_id = {baseline_set_id}
+     and t.status = 'active'
+     and t.canonical = e.canonical
+  ) x
+  where rn = 1
 ),
 jd_evidence as (
-  select distinct e.hit, e.canonical, e.via
-  from jd_raw_evidence e
-  join rb_baseline_term t
-    on t.baseline_set_id = {baseline_set_id}
-   and t.status = 'active'
-   and t.canonical = e.canonical
+  select hit, canonical, via
+  from (
+    select
+      e.hit, e.canonical, e.via,
+      row_number() over (
+        partition by e.canonical
+        order by
+          case when e.via='alias' then 0 else 1 end,
+          length(e.hit) desc,
+          e.hit asc
+      ) as rn
+    from jd_raw_evidence e
+    join rb_baseline_term t
+      on t.baseline_set_id = {baseline_set_id}
+     and t.status = 'active'
+     and t.canonical = e.canonical
+  ) x
+  where rn = 1
 ),
 
 -- =========================
