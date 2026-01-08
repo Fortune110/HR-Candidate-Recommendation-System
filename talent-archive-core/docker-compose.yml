@@ -1,20 +1,16 @@
-version: "3.9"
-
 services:
   postgres:
     image: postgres:16
-    container_name: talent_archive_postgres
+    container_name: resume_blueprint_postgres
     restart: unless-stopped
     ports:
-      - "55433:5432"
+      - "55434:5432"
     environment:
-      POSTGRES_DB: talent_archive_db
-      POSTGRES_USER: talent_user
-      POSTGRES_PASSWORD: talent_password
+      POSTGRES_DB: resume_blueprint_db
+      POSTGRES_USER: rb_user
+      POSTGRES_PASSWORD: rb_password
     volumes:
-      - ta_pgdata_20260107_v1:/var/lib/postgresql/data
-      - ./sql:/docker-entrypoint-initdb.d
+      - rb_pgdata:/var/lib/postgresql/data
 
 volumes:
-  ta_pgdata_20260107_v1:
-    name: ta_pgdata_20260107_v1
+  rb_pgdata:
