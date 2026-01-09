@@ -12,5 +12,22 @@ services:
     volumes:
       - rb_pgdata:/var/lib/postgresql/data
 
+  extract-service:
+    build:
+      context: ./extract-service
+      dockerfile: Dockerfile
+    container_name: resume_blueprint_extract
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
 volumes:
   rb_pgdata:
