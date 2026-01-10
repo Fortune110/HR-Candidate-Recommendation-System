@@ -71,13 +71,13 @@ public class ResumeService {
                 toJson(Map.of("mode", "baseline", "baselineSetId", baselineSetId, "baselineSize", baseline.length))
         );
 
-        // selectedTerms：落地为 tag
+        // selectedTerms: Persist as tags
         for (String normalized : out.selectedTerms()) {
             long canonicalId = repo.upsertCanonicalTag(normalized, normalized);
             repo.insertExtractedTag(runId, canonicalId, 0.80);
         }
 
-        // newTerms：落地为 tag + 进入 review pending（不直接进入 baseline）
+        // newTerms: Persist as tags + enter review pending (not directly into baseline)
         for (AnalyzeResponse.KeywordItem k : out.newTerms()) {
             long canonicalId = repo.upsertCanonicalTag(k.normalized(), k.term());
             long extractedId = repo.insertExtractedTag(runId, canonicalId, k.score());

@@ -42,8 +42,8 @@ create unique index if not exists ux_rb_baseline_term_set_norm
 create table if not exists rb_alias_map (
   id bigserial primary key,
   baseline_set_id bigint not null,
-  alias text not null,            -- raw surface form (e.g. 'Python3', '本科')
-  alias_normalized text not null, -- normalized alias (e.g. 'python3', '本科')
+  alias text not null,            -- raw surface form (e.g. 'Python3', 'bachelor')
+  alias_normalized text not null, -- normalized alias (e.g. 'python3', 'bachelor')
   canonical text not null,        -- target canonical tag (must exist in baseline)
   status text not null default 'active',
   source_note text null,

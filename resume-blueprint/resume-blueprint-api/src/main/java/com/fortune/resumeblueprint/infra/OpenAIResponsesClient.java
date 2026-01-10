@@ -31,8 +31,8 @@ public class OpenAIResponsesClient implements LlmClient {
     @Override
     public AnalyzeResponse analyzeBootstrap(String resumeText) {
         String prompt = """
-你是一个招聘分析助手。请从简历文本中提取“可复用的关键词/技能/技术栈/职位级别/领域词”。
-输出必须是 JSON，字段固定：
+You are a recruitment analysis assistant. Please extract "reusable keywords/skills/tech stack/job levels/domain terms" from the resume text.
+Output must be JSON with fixed fields:
 {
   "summary": "...",
   "keywords": [
@@ -41,12 +41,12 @@ public class OpenAIResponsesClient implements LlmClient {
   "selectedTerms": [],
   "newTerms": []
 }
-规则：
-- normalized：小写、空格用 '-'，去掉多余符号，例如 "Spring Boot" -> "spring-boot"
-- score：0~1，越确定越高
-- evidence：从简历中摘一句最能证明该词的原文片段
-- keywords 最多 30 个，按重要性排序
-简历文本：
+Rules:
+- normalized: lowercase, use '-' for spaces, remove extra symbols, e.g. "Spring Boot" -> "spring-boot"
+- score: 0~1, higher for more certainty
+- evidence: extract a sentence from the resume that best proves this term
+- keywords: maximum 30, sorted by importance
+Resume text:
 """ + resumeText;
 
         JsonNode root = callResponsesJson(prompt);
@@ -58,8 +58,8 @@ public class OpenAIResponsesClient implements LlmClient {
         String baselineList = String.join(", ", baselineNormalized);
 
         String prompt = """
-你是一个招聘分析助手。给你一份“基本词表 baseline”，你必须优先从 baseline 中选择匹配项。
-输出必须是 JSON，字段固定：
+You are a recruitment analysis assistant. Given a "baseline term list", you must prioritize selecting matches from the baseline.
+Output must be JSON with fixed fields:
 {
   "summary": "...",
   "keywords": [],
@@ -68,13 +68,13 @@ public class OpenAIResponsesClient implements LlmClient {
     {"term":"...", "normalized":"...", "score":0.0, "evidence":"..."}
   ]
 }
-规则：
-- selectedTerms 只能来自 baseline（用 normalized 值）
-- newTerms 用于 baseline 之外但很重要的新词（最多 10 个）
-- normalized：小写、空格用 '-'，去掉多余符号
-baseline（normalized 列表）：
+Rules:
+- selectedTerms can only come from baseline (use normalized values)
+- newTerms are for important new terms outside baseline (maximum 10)
+- normalized: lowercase, use '-' for spaces, remove extra symbols
+baseline (normalized list):
 """ + baselineList + """
-简历文本：
+Resume text:
 """ + resumeText;
 
         JsonNode root = callResponsesJson(prompt);
@@ -86,7 +86,7 @@ baseline（normalized 列表）：
         payload.put("model", model);
         payload.put("input", prompt);
 
-        // 让模型“尽量输出 JSON”——后续我们也可以升级到严格 schema
+        // Make the model "try to output JSON" - we can upgrade to strict schema later
         payload.put("text", Map.of("format", Map.of("type", "json_object")));
 
         return webClient.post()
@@ -98,7 +98,7 @@ baseline（normalized 列表）：
     }
 
     private AnalyzeResponse parseAnalyzeResponse(JsonNode root, String mode) {
-        // 从 responses 的 output_text 取 JSON 字符串
+        // Extract JSON string from responses' output_text
         String jsonText = null;
         JsonNode output = root.path("output");
         if (output.isArray()) {
@@ -115,7 +115,7 @@ baseline（normalized 列表）：
             }
         }
         if (jsonText == null || jsonText.isBlank()) {
-            // 兜底：如果没拿到 output_text，就返回空结构
+            // Fallback: if output_text is not obtained, return empty structure
             return new AnalyzeResponse(0L, mode, "", List.of(), List.of(), List.of());
         }
 
