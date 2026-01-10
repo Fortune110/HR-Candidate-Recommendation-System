@@ -14,11 +14,15 @@ from flask_cors import CORS
 
 try:
     import spacy
-    from skillner import SkillExtractor
+    SPACY_AVAILABLE = True
 except ImportError as e:
-    print(f"Warning: {e}. Please install dependencies: pip install -r requirements.txt", file=sys.stderr)
+    print(f"Warning: spaCy not available: {e}. Please install dependencies: pip install -r requirements.txt", file=sys.stderr)
     spacy = None
-    SkillExtractor = None
+    SPACY_AVAILABLE = False
+
+# SkillNER is not a standard PyPI package, using fallback skill extraction instead
+SKILLNER_AVAILABLE = False
+SkillExtractor = None
 
 app = Flask(__name__)
 CORS(app)
@@ -32,9 +36,13 @@ def load_models():
     """Load spaCy and SkillNER models (lazy initialization)"""
     global nlp, skill_extractor
     
+    if not SPACY_AVAILABLE or spacy is None:
+        print("Error: spaCy is not installed. Please install: pip install spacy", file=sys.stderr)
+        sys.exit(1)
+    
     if nlp is None:
         try:
-            # Load spaCy English model (transformer-based for better accuracy)
+            # Try loading transformer model first (better accuracy)
             nlp = spacy.load("en_core_web_trf")
             print("Loaded spaCy en_core_web_trf model", file=sys.stderr)
         except OSError:
@@ -42,17 +50,15 @@ def load_models():
             try:
                 nlp = spacy.load("en_core_web_sm")
                 print("Loaded spaCy en_core_web_sm model (fallback)", file=sys.stderr)
-            except OSError:
-                print("Error: spaCy English model not found. Run: python -m spacy download en_core_web_sm", file=sys.stderr)
+            except OSError as e:
+                print(f"Error: spaCy English model not found: {e}", file=sys.stderr)
+                print("Please download model: python -m spacy download en_core_web_sm", file=sys.stderr)
                 sys.exit(1)
     
-    if skill_extractor is None:
-        try:
-            skill_extractor = SkillExtractor()
-            print("Loaded SkillNER extractor", file=sys.stderr)
-        except Exception as e:
-            print(f"Warning: SkillNER not available: {e}. Skills will be extracted via spaCy only.", file=sys.stderr)
-            skill_extractor = None
+    # SkillNER not available, using fallback skill extraction method
+    skill_extractor = None
+    if not SKILLNER_AVAILABLE:
+        print("Using fallback skill extraction (keyword-based).", file=sys.stderr)
     
     return nlp, skill_extractor
 
