@@ -43,7 +43,7 @@ public class BaselineRepo {
         return jdbc.queryForList(sql, String.class, baselineSetId, limit);
     }
 
-    /** 聚合最近 lastN 次 run 的标签，返回 normalized/cnt/label */
+    /** Aggregate tags from the last lastN runs, returns normalized/cnt/label */
     public List<AggregatedTerm> aggregateTopTerms(int lastN, int minCount, int limit) {
         String sql = """
         with recent as (

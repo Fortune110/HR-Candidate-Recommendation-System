@@ -24,7 +24,7 @@ public class ReviewRepo {
     }
 
     public int approveToBaseline(long reviewId) {
-        // 只负责把 pending -> approved，真正写入 baseline_term 我们交给 service 统一处理
+        // Only responsible for changing pending -> approved, actual write to baseline_term is handled by service
         return jdbc.update("update rb_term_review set status='approved' where review_id=? and status='pending'", reviewId);
     }
 

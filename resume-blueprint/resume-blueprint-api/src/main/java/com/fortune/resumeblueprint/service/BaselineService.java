@@ -15,8 +15,8 @@ public class BaselineService {
     }
 
     /**
-     * 从最近 lastN 次 rb_run 中聚合标签，cnt>=minCount 的作为 baseline 基本词。
-     * limit 先固定 300（够用且不至于 prompt 太长）
+     * Aggregate tags from the last lastN rb_run entries, terms with cnt>=minCount become baseline terms.
+     * Limit is fixed at 300 for now (sufficient and keeps prompt length reasonable)
      */
     public BuildResult buildBaseline(int lastN, int minCount) {
         String name = "baseline_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));

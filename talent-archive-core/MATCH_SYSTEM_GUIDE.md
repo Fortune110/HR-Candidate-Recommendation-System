@@ -1,43 +1,43 @@
-# 标签比对系统使用指南
+# Tag Matching System Usage Guide
 
-## 概述
+## Overview
 
-标签比对系统实现了"简历 vs 成功样本"的相似度对比，输出匹配分数、证据、缺口和建议。
+The tag matching system implements similarity comparison between "resume vs success profile", outputting match scores, evidence, gaps, and recommendations.
 
-## 架构位置
+## Architecture Position
 
-集成到 4-box 框架的 Box 3/4：
+Integrated into Box 3/4 of the 4-box framework:
 - **Box 1**: Extract（spaCy + SkillNER）✅
 - **Box 2**: Normalize（baseline dictionary）✅
-- **Box 3**: Compare/Match（简历 vs 成功样本）✅ **新增**
-- **Box 4**: Report/Action（输出可解释报告）✅ **新增**
+- **Box 3**: Compare/Match（resume vs success profile）✅ **NEW**
+- **Box 4**: Report/Action（output interpretable reports）✅ **NEW**
 
-## 核心功能
+## Core Features
 
-### 1. 成功样本导入
+### 1. Success Profile Import
 
-支持两类成功样本：
-- **Internal Success Cohort**: 公司内部已招聘成功/现员工
-- **External Success Cohort**: 外部求职成功样本（LinkedIn 等，合规获取）
+Supports two types of success profiles:
+- **Internal Success Cohort**: Successfully hired employees / current employees within the company
+- **External Success Cohort**: External successful candidate samples (LinkedIn, etc., obtained compliantly)
 
-### 2. 比对算法
+### 2. Matching Algorithm
 
-**加权 Jaccard 相似度**：
-- `overlap_score = intersection / union`（加权）
-- `gap_penalty`: 成功样本高权重但简历缺失的标签（最多扣 30%）
-- `bonus_score`: 简历有但成功样本较少的差异化强项（最多加 15%）
+**Weighted Jaccard Similarity**:
+- `overlap_score = intersection / union` (weighted)
+- `gap_penalty`: High-weight tags in success profile but missing in resume (max deduction 30%)
+- `bonus_score`: Differentiating strengths in resume but fewer in success profile (max addition 15%)
 - `final_score = overlap_score - gap_penalty + bonus_score`
 
-### 3. 输出内容
+### 3. Output Content
 
-- **Top Overlaps**: 主要重叠标签 + 证据
-- **Top Gaps**: 主要缺口标签（按成功样本权重排序）
-- **Top Strengths**: 差异化强项
-- **Score Breakdown**: 详细分数分解
+- **Top Overlaps**: Main overlapping tags + evidence
+- **Top Gaps**: Main gap tags (sorted by success profile weight)
+- **Top Strengths**: Differentiating strengths
+- **Score Breakdown**: Detailed score decomposition
 
-## API 使用
+## API Usage
 
-### 1. 导入成功样本
+### 1. Import Success Profile
 
 ```bash
 POST /api/success-profiles/import
@@ -52,7 +52,7 @@ Content-Type: application/json
 }
 ```
 
-**响应：**
+**Response:**
 ```json
 {
   "profileId": 1,
@@ -60,7 +60,7 @@ Content-Type: application/json
 }
 ```
 
-### 2. 执行匹配
+### 2. Execute Matching
 
 ```bash
 POST /api/match
@@ -74,7 +74,7 @@ Content-Type: application/json
 }
 ```
 
-**响应：**
+**Response:**
 ```json
 {
   "matchRunId": 1,
@@ -116,33 +116,33 @@ Content-Type: application/json
 }
 ```
 
-## 数据库表结构
+## Database Table Structure
 
 ### rb_success_profile
-成功样本画像（不一定是具体个人，也可以是一组）
+Success profile (not necessarily a specific person, can also be a group)
 
 ### rb_success_profile_tag
-成功样本的标签明细（带权重）
+Success profile tag details (with weights)
 
 ### rb_resume_project
-简历项目（从简历中提取的项目经历）
+Resume project (project experience extracted from resume)
 
 ### rb_resume_project_tag
-简历项目的标签明细
+Resume project tag details
 
 ### rb_match_run
-一次比对操作（可追溯）
+A matching operation (traceable)
 
 ### rb_match_result
-比对结果（分数、重叠、缺口、解释）
+Matching results (score, overlaps, gaps, explanations)
 
-## 使用流程
+## Usage Flow
 
-### Step 1: 导入成功样本
+### Step 1: Import Success Profile
 
-**内部样本：**
+**Internal Samples:**
 ```bash
-# 导入内部员工样本
+# Import internal employee samples
 curl -X POST http://localhost:18080/api/success-profiles/import \
   -H "Content-Type: application/json" \
   -d '{
@@ -154,9 +154,9 @@ curl -X POST http://localhost:18080/api/success-profiles/import \
   }'
 ```
 
-**外部样本（合规）：**
+**External Samples (Compliant):**
 ```bash
-# 导入外部成功样本（手动采集，不爬虫）
+# Import external success samples (manual collection, no scraping)
 curl -X POST http://localhost:18080/api/success-profiles/import \
   -H "Content-Type: application/json" \
   -d '{
@@ -168,10 +168,10 @@ curl -X POST http://localhost:18080/api/success-profiles/import \
   }'
 ```
 
-### Step 2: 导入简历
+### Step 2: Import Resume
 
 ```bash
-# 先导入简历
+# First import resume
 POST /api/resumes
 {
   "candidateId": "candidate_001",
@@ -179,10 +179,10 @@ POST /api/resumes
 }
 ```
 
-### Step 3: 执行匹配
+### Step 3: Execute Matching
 
 ```bash
-# 匹配简历与成功样本
+# Match resume with success profile
 POST /api/match
 {
   "resumeDocumentId": 1,
@@ -190,17 +190,17 @@ POST /api/match
 }
 ```
 
-### Step 4: 查看结果
+### Step 4: View Results
 
-结果包含：
-- **匹配分数**: 0-1 之间的分数
-- **重叠标签**: 简历与成功样本都有的标签
-- **缺口标签**: 成功样本有但简历缺失的标签
-- **差异化强项**: 简历有但成功样本较少的标签
+Results include:
+- **Match Score**: Score between 0-1
+- **Overlapping Tags**: Tags present in both resume and success profile
+- **Gap Tags**: Tags in success profile but missing in resume
+- **Differentiating Strengths**: Tags in resume but fewer in success profile
 
-## 比对算法详解
+## Matching Algorithm Details
 
-### 1. 加权 Jaccard 相似度
+### 1. Weighted Jaccard Similarity
 
 ```
 overlap_score = sum(min(resume_weight, cohort_weight)) / sum(max(resume_weight, cohort_weight))
@@ -208,18 +208,18 @@ overlap_score = sum(min(resume_weight, cohort_weight)) / sum(max(resume_weight, 
 
 ### 2. Gap Penalty
 
-对成功样本中高权重（>0.5）但简历缺失的标签进行惩罚：
+Penalize high-weight tags (>0.5) in success profile that are missing in resume:
 ```
-gap_penalty = sum(gap_weight * 0.1)  # 每个缺口扣 10%
-gap_penalty = min(gap_penalty, 0.3)  # 最多扣 30%
+gap_penalty = sum(gap_weight * 0.1)  # Deduct 10% per gap
+gap_penalty = min(gap_penalty, 0.3)  # Max deduction 30%
 ```
 
 ### 3. Bonus Score
 
-对简历中比成功样本平均权重高 20% 以上的标签给予奖励：
+Reward tags in resume that are 20% higher than success profile average weight:
 ```
-bonus_score = sum(strength_weight * 0.05)  # 每个强项加 5%
-bonus_score = min(bonus_score, 0.15)      # 最多加 15%
+bonus_score = sum(strength_weight * 0.05)  # Add 5% per strength
+bonus_score = min(bonus_score, 0.15)      # Max addition 15%
 ```
 
 ### 4. Final Score
@@ -228,91 +228,91 @@ bonus_score = min(bonus_score, 0.15)      # 最多加 15%
 final_score = max(0, min(1, overlap_score - gap_penalty + bonus_score))
 ```
 
-## 外部样本获取（合规路径）
+## External Sample Acquisition (Compliant Path)
 
-**重要：不使用爬虫，采用人工采集**
+**Important: Do not use scrapers, use manual collection**
 
-### 方法 1: LinkedIn 公开数据
-- 使用 LinkedIn 的公开搜索功能
-- 手动复制成功候选人的公开 profile 描述
-- 脱敏处理（移除姓名、具体公司名等）
-- 只保留技能、项目描述等结构化信息
+### Method 1: LinkedIn Public Data
+- Use LinkedIn's public search function
+- Manually copy public profile descriptions of successful candidates
+- De-identify (remove names, specific company names, etc.)
+- Only keep structured information like skills, project descriptions
 
-### 方法 2: 招聘平台公开数据
-- 从招聘平台（如 Indeed、Glassdoor）的公开职位描述
-- 提取"成功候选人"的典型要求
-- 作为外部成功样本的参考
+### Method 2: Job Board Public Data
+- Extract from job board public job descriptions (e.g., Indeed, Glassdoor)
+- Extract typical requirements for "successful candidates"
+- Use as reference for external success profiles
 
-### 方法 3: 行业报告
-- 参考行业技能报告（如 Stack Overflow Survey）
-- 提取"成功开发者"的技能分布
-- 作为外部成功样本的补充
+### Method 3: Industry Reports
+- Reference industry skill reports (e.g., Stack Overflow Survey)
+- Extract skill distribution of "successful developers"
+- Use as supplement for external success profiles
 
-### CSV 导入模板
+### CSV Import Template
 
-创建 `external_success_ingest.csv`:
+Create `external_success_ingest.csv`:
 ```csv
 source,role,level,company,text
 external_success,Java Backend Engineer,mid,Tech Industry,"5+ years Java, Spring Boot, microservices..."
 external_success,Java Backend Engineer,senior,Tech Industry,"8+ years Java, distributed systems..."
 ```
 
-然后批量导入（需要实现批量导入接口，当前版本支持单个导入）。
+Then batch import (requires implementing batch import interface, current version supports single import).
 
-## 下一步优化（P1/P2/P3）
+## Next Steps Optimization (P1/P2/P3)
 
-### P1: 项目维度提取
-- [ ] 简历解析：把简历拆成 projects
-- [ ] 对每个 project 单独抽 tags
-- [ ] 报告里展示：哪个项目贡献了哪些标签
+### P1: Project Dimension Extraction
+- [ ] Resume parsing: Split resume into projects
+- [ ] Extract tags for each project separately
+- [ ] Display in report: Which project contributed which tags
 
-### P2: 外部样本上量
-- [ ] 批量导入 CSV
-- [ ] 做对比：internal vs external 成功画像差异
+### P2: Scale External Samples
+- [ ] Batch CSV import
+- [ ] Compare: internal vs external success profile differences
 
-### P3: 评估与迭代
-- [ ] 评测集（20~50 份简历）
-- [ ] 记录 algo_version，确保可追溯迭代
+### P3: Evaluation and Iteration
+- [ ] Evaluation set (20~50 resumes)
+- [ ] Record algo_version to ensure traceable iteration
 
-## 注意事项
+## Notes
 
-1. **隐私保护**：
-   - External 样本永远只输出"画像/分布/对比结果"，不做个人识别
-   - Internal 样本建议先做"团队画像（cohort）"，不要直接对某个员工逐个比对
+1. **Privacy Protection**:
+   - External samples always output only "profile/distribution/comparison results", no personal identification
+   - Internal samples should first create "team profile (cohort)", do not directly match individual employees one by one
 
-2. **可追溯性**：
-   - 每次匹配都记录 `match_run_id`
-   - 算法版本记录在 `algo_version` 字段
-   - 配置参数记录在 `config` JSON 中
+2. **Traceability**:
+   - Each match records `match_run_id`
+   - Algorithm version recorded in `algo_version` field
+   - Configuration parameters recorded in `config` JSON
 
-3. **可解释性**：
-   - 每个标签都有 `evidence`（原文片段）
-   - 每个分数都有 `explain_json`（详细解释）
+3. **Interpretability**:
+   - Each tag has `evidence` (original text snippet)
+   - Each score has `explain_json` (detailed explanation)
 
-## 示例场景
+## Example Scenario
 
-### 场景：Java 后端工程师（mid）匹配
+### Scenario: Java Backend Engineer (mid) Matching
 
-**成功样本标签分布：**
+**Success Profile Tag Distribution:**
 - skill/java: 1.0
 - skill/spring_boot: 0.9
 - skill/microservices: 0.8
 - skill/kubernetes: 0.7
 - skill/docker: 0.6
 
-**简历标签：**
+**Resume Tags:**
 - skill/java: 1.0
 - skill/spring_boot: 0.9
 - skill/microservices: 0.7
-- skill/python: 0.8  (差异化强项)
+- skill/python: 0.8  (differentiating strength)
 
-**匹配结果：**
-- Overlap Score: 0.82 (有 Java, Spring Boot, Microservices)
-- Gap Penalty: 0.14 (缺少 Kubernetes, Docker)
-- Bonus Score: 0.05 (Python 是强项)
+**Matching Results:**
+- Overlap Score: 0.82 (has Java, Spring Boot, Microservices)
+- Gap Penalty: 0.14 (missing Kubernetes, Docker)
+- Bonus Score: 0.05 (Python is a strength)
 - Final Score: 0.73
 
-**建议：**
-- ✅ 重叠：Java, Spring Boot, Microservices（匹配良好）
-- ⚠️ 缺口：Kubernetes, Docker（建议补强）
-- 💪 强项：Python（差异化优势）
+**Recommendations:**
+- ✅ Overlap: Java, Spring Boot, Microservices (good match)
+- ⚠️ Gaps: Kubernetes, Docker (recommend strengthening)
+- 💪 Strength: Python (differentiating advantage)
