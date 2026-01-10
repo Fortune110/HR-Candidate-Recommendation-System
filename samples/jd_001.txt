@@ -1,0 +1,13 @@
+【JOB DESCRIPTION】
+Role: Backend Engineer (Java/Spring, PostgreSQL)
+Must have:
+- 3+ years Java & Spring Boot
+- PostgreSQL schema design, indexing, query optimization
+- REST API design, OpenAPI/Swagger
+Nice to have:
+- Docker & CI/CD
+- Data processing / tagging / ranking logic
+Responsibilities:
+- Build and maintain candidate data services
+- Implement reliable ingestion and search APIs
+- Improve performance and observability (metrics/health)

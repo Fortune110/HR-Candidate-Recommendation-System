@@ -1,0 +1,18 @@
+【RESUME】
+Name: Alex Chen
+Email: alex.chen@email.com
+Location: Sydney / Tokyo (open to relocate)
+Summary: Backend engineer (Java/Spring) with 4+ years experience building REST APIs, data pipelines, and PostgreSQL-backed services. Familiar with Docker, CI/CD, and basic ML ranking.
+Skills: Java 17, Spring Boot, Spring Data JPA, PostgreSQL, Redis, Docker, GitHub Actions, REST, OpenAPI, Linux
+Experience:
+- Backend Engineer, FinTech A (2022-2025)
+  - Built candidate matching microservice with PostgreSQL; improved query latency 40% via indexing and EXPLAIN tuning.
+  - Designed REST APIs with OpenAPI; added Actuator metrics and health checks.
+  - Implemented ETL job to normalize skill tags; reduced duplicate labels 30%.
+- Software Engineer, SaaS B (2020-2022)
+  - Implemented RBAC and audit logs for HR workflow system.
+Education: BSc Computer Science
+Projects:
+- HR Candidate Recommendation System (personal): resume ingestion, tag normalization, ranking queries.
+Achievements:
+- Led migration from MySQL to PostgreSQL for one service; created docker-compose dev environment.

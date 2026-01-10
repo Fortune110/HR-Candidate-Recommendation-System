@@ -1,0 +1,72 @@
+### HR Candidate Recommendation System - API Requests
+### Base URL: http://localhost:18080
+
+### 1. Health Check
+GET {{baseUrl}}/api/extract/health
+Accept: application/json
+
+### 2. Ingest Resume (Golden Path Step 1)
+POST {{baseUrl}}/api/resumes
+Content-Type: application/json
+
+{
+  "candidateId": "test_candidate_001",
+  "text": "Name: Alex Chen\nEmail: alex.chen@email.com\nLocation: Sydney / Tokyo\nSummary: Backend engineer (Java/Spring) with 4+ years experience..."
+}
+
+### 3. Extract Entities (Golden Path Step 2)
+# Note: Replace {{documentId}} with the ID returned from resume ingestion
+POST {{baseUrl}}/api/extract
+Content-Type: application/json
+
+{
+  "documentId": 1,
+  "text": "Name: Alex Chen\nEmail: alex.chen@email.com\nLocation: Sydney / Tokyo\nSummary: Backend engineer (Java/Spring) with 4+ years experience...",
+  "docType": "RESUME"
+}
+
+### 4. Match Resume (Golden Path Step 3)
+# Note: Replace {{resumeDocumentId}} with the ID returned from resume ingestion
+POST {{baseUrl}}/api/match
+Content-Type: application/json
+
+{
+  "resumeDocumentId": 1,
+  "target": "both",
+  "roleFilter": null,
+  "levelFilter": null
+}
+
+### 5. Build Baseline
+POST {{baseUrl}}/api/baseline/build?lastN=50&minCount=2
+Content-Type: application/json
+
+### 6. Import Success Profile
+POST {{baseUrl}}/api/success-profiles/import
+Content-Type: application/json
+
+{
+  "source": "internal_employee",
+  "role": "Java Backend Engineer",
+  "level": "mid",
+  "company": "Acme Corp",
+  "text": "Backend Engineer with 5+ years experience in Java, Spring Boot, PostgreSQL..."
+}
+
+### 7. Analyze Resume (Bootstrap)
+# Note: Replace {{documentId}} with actual document ID
+POST {{baseUrl}}/api/resumes/{{documentId}}/analyze/bootstrap
+Content-Type: application/json
+
+{
+  "text": "Resume text here..."
+}
+
+### 8. Analyze Resume (Baseline)
+# Note: Replace {{documentId}} and {{baselineSetId}} with actual IDs
+POST {{baseUrl}}/api/resumes/{{documentId}}/analyze/baseline?baselineSetId=1
+Content-Type: application/json
+
+{
+  "text": "Resume text here..."
+}

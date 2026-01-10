@@ -6,6 +6,8 @@ import com.fortune.resumeblueprint.service.MatchService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/match")
 public class MatchController {
@@ -36,6 +38,20 @@ public class MatchController {
                 req.levelFilter()
         );
         
-        return new MatchResponse(result.matchRunId(), result.matches());
+        // Convert MatchService.ProfileMatch to MatchResponse.ProfileMatch
+        List<MatchResponse.ProfileMatch> responseMatches = result.matches().stream()
+                .map(m -> new MatchResponse.ProfileMatch(
+                        m.source(),
+                        m.score(),
+                        m.overlapScore(),
+                        m.gapPenalty(),
+                        m.bonusScore(),
+                        m.topOverlaps(),
+                        m.topGaps(),
+                        m.topStrengths()
+                ))
+                .toList();
+        
+        return new MatchResponse(result.matchRunId(), responseMatches);
     }
 }
