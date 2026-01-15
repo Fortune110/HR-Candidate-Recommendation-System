@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Upload - HR Candidate Recommendation System</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .required {
+            color: #e74c3c;
+        }
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px dashed #e0e0e0;
+            border-radius: 6px;
+            background: #f9f9f9;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        input[type="file"]:hover {
+            border-color: #667eea;
+            background: #f5f5f5;
+        }
+        .help-text {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+        .button-group {
+            margin-top: 30px;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 6px;
+            display: none;
+        }
+        .result.show {
+            display: block;
+        }
+        .result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .result-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+        .result-field {
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .result-label {
+            font-weight: 600;
+            display: inline-block;
+            width: 120px;
+        }
+        .match-result {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 4px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .match-result pre {
+            margin: 0;
+            font-size: 12px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .toggle-button {
+            background: transparent;
+            color: #667eea;
+            border: 1px solid #667eea;
+            padding: 6px 12px;
+            font-size: 12px;
+            margin-top: 8px;
+            width: auto;
+        }
+        .toggle-button:hover {
+            background: #667eea;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📄 PDF Upload</h1>
+        <div class="subtitle">
+            Demo Upload Portal - Access URL: <strong>http://localhost:18080/upload</strong>
+        </div>
+        
+        <form id="uploadForm">
+            <div class="form-group">
+                <label for="candidateId">
+                    Candidate ID <span class="required">*</span>
+                </label>
+                <input type="text" id="candidateId" name="candidateId" required>
+                <div class="help-text">Required, will auto-generate UUID if left empty</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="docType">Document Type</label>
+                <select id="docType" name="docType">
+                    <option value="candidate_resume" selected>candidate_resume (Resume)</option>
+                    <option value="resume">resume (Resume)</option>
+                    <option value="jd">jd (Job Description)</option>
+                    <option value="job_description">job_description (Job Description)</option>
+                    <option value="job">job (Job Description)</option>
+                </select>
+                <div class="help-text">Default is candidate_resume</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="jobId">Job ID</label>
+                <input type="text" id="jobId" name="jobId">
+                <div class="help-text">Optional, if provided will perform matching analysis</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="file">
+                    PDF File <span class="required">*</span>
+                </label>
+                <input type="file" id="file" name="file" accept="application/pdf" required>
+                <div class="help-text">PDF format only, max 10MB</div>
+            </div>
+            
+            <div class="button-group">
+                <button type="submit" id="submitBtn">Upload and Process</button>
+            </div>
+        </form>
+        
+        <div id="result" class="result"></div>
+    </div>
+    
+    <script>
+        // Auto-generate candidateId if empty
+        function generateCandidateId() {
+            const input = document.getElementById('candidateId');
+            if (!input.value.trim()) {
+                // Generate UUID v4
+                let uuid = 'candidate_' + 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                    const r = Math.random() * 16 | 0;
+                    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                });
+                input.value = uuid;
+            }
+        }
+        
+        // Generate candidateId on initialization
+        window.addEventListener('DOMContentLoaded', function() {
+            generateCandidateId();
+            
+            // Auto-generate candidateId if empty when losing focus
+            document.getElementById('candidateId').addEventListener('blur', function() {
+                if (!this.value.trim()) {
+                    generateCandidateId();
+                }
+            });
+        });
+        
+        // Submit form
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const fileInput = document.getElementById('file');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                showError('Please select a PDF file');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+                showError('File must be in PDF format');
+                return;
+            }
+            
+            // Generate candidateId if empty
+            generateCandidateId();
+            
+            const formData = new FormData();
+            formData.append('candidateId', document.getElementById('candidateId').value);
+            formData.append('docType', document.getElementById('docType').value);
+            const jobId = document.getElementById('jobId').value.trim();
+            if (jobId) {
+                formData.append('jobId', jobId);
+            }
+            formData.append('file', file);
+            
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processing...';
+            
+            try {
+                const response = await fetch('/api/pipeline/ingest-pdf-and-match', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.ok) {
+                    showSuccess(result);
+                } else {
+                    showError(result.message || 'Processing failed', result);
+                }
+            } catch (error) {
+                showError('Upload failed: ' + error.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Upload and Process';
+            }
+        });
+        
+        function showSuccess(data) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = 'result success show';
+            
+            let html = '<div class="result-title">✅ Upload Successful</div>';
+            html += '<div class="result-field"><span class="result-label">Status:</span> Success</div>';
+            html += '<div class="result-field"><span class="result-label">Message:</span> ' + escapeHtml(data.message || '') + '</div>';
+            html += '<div class="result-field"><span class="result-label">Trace ID:</span> ' + escapeHtml(data.traceId || '') + '</div>';
+            if (data.documentId) {
+                html += '<div class="result-field"><span class="result-label">Document ID:</span> ' + data.documentId + '</div>';
+            }
+            if (data.extractRunId) {
+                html += '<div class="result-field"><span class="result-label">Extract Run ID:</span> ' + data.extractRunId + '</div>';
+            }
+            if (data.textLength !== null && data.textLength !== undefined) {
+                html += '<div class="result-field"><span class="result-label">Text Length:</span> ' + data.textLength + ' characters</div>';
+            }
+            
+            if (data.matchResult) {
+                html += '<div class="match-result">';
+                html += '<div style="margin-bottom: 8px; font-weight: 600;">Match Result:</div>';
+                html += '<pre>' + escapeHtml(JSON.stringify(data.matchResult, null, 2)) + '</pre>';
+                html += '</div>';
+            }
+            
+            resultDiv.innerHTML = html;
+            resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        
+        function showError(message, data) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = 'result error show';
+            
+            let html = '<div class="result-title">❌ Upload Failed</div>';
+            html += '<div class="result-field"><span class="result-label">Error:</span> ' + escapeHtml(message) + '</div>';
+            
+            if (data) {
+                if (data.traceId) {
+                    html += '<div class="result-field"><span class="result-label">Trace ID:</span> ' + escapeHtml(data.traceId) + '</div>';
+                }
+                if (data.textLength !== null && data.textLength !== undefined) {
+                    html += '<div class="result-field"><span class="result-label">Text Length:</span> ' + data.textLength + ' characters</div>';
+                }
+            }
+            
+            // Common error hints
+            if (message.includes('PDF') || message.includes('pdf')) {
+                html += '<div class="help-text" style="margin-top: 12px; color: #721c24;">
+                    Hint: Please ensure you upload a valid PDF file (not scanned, text length must be greater than 50 characters)
+                </div>';
+            } else if (message.includes('docType')) {
+                html += '<div class="help-text" style="margin-top: 12px; color: #721c24;">
+                    Hint: docType must be one of: candidate_resume, resume, jd, job_description, job
+                </div>';
+            } else if (message.includes('extract') || message.includes('Extract')) {
+                html += '<div class="help-text" style="margin-top: 12px; color: #721c24;">
+                    Hint: Extract Service may not be started, please check if extract-service is running
+                </div>';
+            }
+            
+            resultDiv.innerHTML = html;
+            resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

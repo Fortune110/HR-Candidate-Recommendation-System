@@ -27,3 +27,30 @@ Goal: Convert resume text -> traceable analysis run -> tags -> gradually accumul
 - service/: Business logic (ingest/analyze/build baseline)
 - repo/: SQL access (JdbcTemplate)
 - infra/: Replaceable LLM implementation (currently stub, will integrate OpenAI later)
+
+## PDF Upload Feature
+
+### Swagger UI (Recommended for Developers)
+After starting the application, access Swagger UI for API testing and documentation:
+- Access URL: `http://localhost:18080/swagger-ui/index.html`
+- Find `PdfPipelineController` -> `POST /api/pipeline/ingest-pdf-and-match`
+- Click "Try it out", fill in parameters, select PDF file, click "Execute"
+
+### Upload Page (Recommended for Non-Technical Users)
+Demo upload portal, no command line or Postman required:
+- Access URL: `http://localhost:18080/upload`
+- Fill in candidateId (or use auto-generated), optionally fill in jobId and docType
+- Select PDF file, click "Upload and Process"
+- View upload results, including traceId, textLength and matchResult (if jobId is provided)
+
+**Feature Description:**
+- `candidateId`: Required, will auto-generate UUID if left empty
+- `docType`: Optional, default is `candidate_resume`, supports: candidate_resume, resume, jd, job_description, job
+- `jobId`: Optional, if provided will perform matching analysis and return matchResult
+- `file`: Required, PDF file, max 10MB, only supports text-based PDF (scanned document OCR not implemented)
+
+**Error Messages:**
+- Non-PDF file: Will show "Invalid file type; expected a PDF upload."
+- Unsupported docType: Will show "Unsupported docType"
+- Scanned document (textLength < 50): Will show "Extracted text is too short"
+- extract-service not started: Will fail at extract step and show corresponding error
