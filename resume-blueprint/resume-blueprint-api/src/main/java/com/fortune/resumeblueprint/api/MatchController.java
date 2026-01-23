@@ -4,7 +4,9 @@ import com.fortune.resumeblueprint.api.dto.MatchRequest;
 import com.fortune.resumeblueprint.api.dto.MatchResponse;
 import com.fortune.resumeblueprint.service.MatchService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -53,5 +55,11 @@ public class MatchController {
                 .toList();
         
         return new MatchResponse(result.matchRunId(), responseMatches);
+    }
+
+    @GetMapping("/{matchRunId}")
+    public MatchResponse getMatch(@PathVariable long matchRunId) {
+        return matchService.getMatchRun(matchRunId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Match run not found"));
     }
 }

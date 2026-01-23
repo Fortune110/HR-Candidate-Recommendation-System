@@ -1,6 +1,7 @@
 package com.fortune.resumeblueprint.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fortune.resumeblueprint.api.dto.MatchResponse;
 import com.fortune.resumeblueprint.repo.MatchRepo;
 import com.fortune.resumeblueprint.repo.SuccessProfileRepo;
@@ -72,6 +73,28 @@ public class MatchService {
         }
 
         return new MatchResult(matchRunId, profileMatches);
+    }
+
+    public Optional<MatchResponse> getMatchRun(long matchRunId) {
+        Optional<MatchRepo.MatchRun> run = matchRepo.getMatchRun(matchRunId);
+        if (run.isEmpty()) {
+            return Optional.empty();
+        }
+
+        List<MatchResponse.ProfileMatch> responseMatches = matchRepo.getMatchResults(matchRunId).stream()
+                .map(result -> new MatchResponse.ProfileMatch(
+                        result.source(),
+                        result.score(),
+                        result.overlapScore(),
+                        result.gapPenalty(),
+                        result.bonusScore(),
+                        readList(result.overlapTopkJson(), new TypeReference<List<MatchResponse.OverlapItem>>() {}),
+                        readList(result.gapsTopkJson(), new TypeReference<List<MatchResponse.GapItem>>() {}),
+                        readList(result.strengthsTopkJson(), new TypeReference<List<MatchResponse.StrengthItem>>() {})
+                ))
+                .toList();
+
+        return Optional.of(new MatchResponse(matchRunId, responseMatches));
     }
 
     /**
@@ -179,6 +202,17 @@ public class MatchService {
             return om.writeValueAsString(o);
         } catch (Exception e) {
             return "{}";
+        }
+    }
+
+    private <T> List<T> readList(String json, TypeReference<List<T>> typeRef) {
+        if (json == null || json.isBlank()) {
+            return List.of();
+        }
+        try {
+            return om.readValue(json, typeRef);
+        } catch (Exception e) {
+            return List.of();
         }
     }
 
