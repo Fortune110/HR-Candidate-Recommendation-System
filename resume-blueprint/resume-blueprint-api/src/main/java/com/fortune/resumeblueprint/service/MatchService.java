@@ -1,13 +1,18 @@
 package com.fortune.resumeblueprint.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fortune.resumeblueprint.api.dto.MatchResponse;
+import com.fortune.resumeblueprint.api.dto.MatchRunResponse;
 import com.fortune.resumeblueprint.repo.MatchRepo;
 import com.fortune.resumeblueprint.repo.SuccessProfileRepo;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 /**
  * Service for Box 3/4: Compare resume tags with success cohort tags.
@@ -72,6 +77,35 @@ public class MatchService {
         }
 
         return new MatchResult(matchRunId, profileMatches);
+    }
+
+    public MatchRunResponse getMatchRun(long matchRunId) {
+        MatchRepo.MatchRunRow run = matchRepo.findMatchRun(matchRunId)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Match run not found"));
+
+        List<MatchResponse.ProfileMatch> matches = matchRepo.listMatchResults(matchRunId).stream()
+                .map(result -> new MatchResponse.ProfileMatch(
+                        result.source(),
+                        result.score(),
+                        result.overlapScore(),
+                        result.gapPenalty(),
+                        result.bonusScore(),
+                        readList(result.overlapTopkJson(), new TypeReference<>() {}),
+                        readList(result.gapsTopkJson(), new TypeReference<>() {}),
+                        readList(result.strengthsTopkJson(), new TypeReference<>() {})
+                ))
+                .toList();
+
+        return new MatchRunResponse(
+                run.matchRunId(),
+                run.resumeDocumentId(),
+                run.target(),
+                run.roleFilter(),
+                run.levelFilter(),
+                run.algoVersion(),
+                run.createdAt(),
+                matches
+        );
     }
 
     /**
@@ -179,6 +213,17 @@ public class MatchService {
             return om.writeValueAsString(o);
         } catch (Exception e) {
             return "{}";
+        }
+    }
+
+    private <T> List<T> readList(String json, TypeReference<List<T>> typeRef) {
+        if (json == null || json.isBlank()) {
+            return List.of();
+        }
+        try {
+            return om.readValue(json, typeRef);
+        } catch (Exception e) {
+            return List.of();
         }
     }
 

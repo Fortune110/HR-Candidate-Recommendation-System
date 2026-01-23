@@ -13,3 +13,9 @@ spring:
 openai:
   apiKey: ${OPENAI_API_KEY:}
   model: ${OPENAI_MODEL:gpt-4o-mini}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info"
