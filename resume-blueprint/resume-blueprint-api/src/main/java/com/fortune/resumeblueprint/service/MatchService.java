@@ -1,5 +1,6 @@
 package com.fortune.resumeblueprint.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fortune.resumeblueprint.api.dto.MatchResponse;
 import com.fortune.resumeblueprint.repo.MatchRepo;
@@ -72,6 +73,30 @@ public class MatchService {
         }
 
         return new MatchResult(matchRunId, profileMatches);
+    }
+
+    public Optional<MatchResponse> getMatchRun(long matchRunId) {
+        List<MatchRepo.MatchResultRow> rows = matchRepo.getMatchResults(matchRunId);
+        if (rows.isEmpty()) {
+            return matchRepo.matchRunExists(matchRunId)
+                    ? Optional.of(new MatchResponse(matchRunId, List.of()))
+                    : Optional.empty();
+        }
+
+        List<MatchResponse.ProfileMatch> matches = rows.stream()
+                .map(row -> new MatchResponse.ProfileMatch(
+                        row.source(),
+                        row.score(),
+                        row.overlapScore(),
+                        row.gapPenalty(),
+                        row.bonusScore(),
+                        parseList(row.overlapTopkJson(), new TypeReference<>() {}),
+                        parseList(row.gapsTopkJson(), new TypeReference<>() {}),
+                        parseList(row.strengthsTopkJson(), new TypeReference<>() {})
+                ))
+                .toList();
+
+        return Optional.of(new MatchResponse(matchRunId, matches));
     }
 
     /**
@@ -179,6 +204,17 @@ public class MatchService {
             return om.writeValueAsString(o);
         } catch (Exception e) {
             return "{}";
+        }
+    }
+
+    private <T> List<T> parseList(String json, TypeReference<List<T>> type) {
+        if (json == null || json.isBlank()) {
+            return List.of();
+        }
+        try {
+            return om.readValue(json, type);
+        } catch (Exception e) {
+            return List.of();
         }
     }
 

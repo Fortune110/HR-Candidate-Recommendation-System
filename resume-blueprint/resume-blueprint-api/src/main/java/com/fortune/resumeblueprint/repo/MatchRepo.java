@@ -79,5 +79,55 @@ public class MatchRepo {
         ), resumeDocumentId, resumeDocumentId);
     }
 
+    public boolean matchRunExists(long matchRunId) {
+        Integer count = jdbc.queryForObject(
+                "select count(*) from rb_match_run where match_run_id = ?",
+                Integer.class,
+                matchRunId
+        );
+        return count != null && count > 0;
+    }
+
+    public List<MatchResultRow> getMatchResults(long matchRunId) {
+        String sql = """
+            select mr.match_run_id,
+                   sp.source,
+                   mr.score,
+                   mr.overlap_score,
+                   mr.gap_penalty,
+                   mr.bonus_score,
+                   mr.overlap_topk::text as overlap_topk,
+                   mr.gaps_topk::text as gaps_topk,
+                   mr.strengths_topk::text as strengths_topk
+            from rb_match_result mr
+            join rb_success_profile sp on sp.profile_id = mr.profile_id
+            where mr.match_run_id = ?
+            order by mr.score desc
+            """;
+        return jdbc.query(sql, (rs, rowNum) -> new MatchResultRow(
+                rs.getLong("match_run_id"),
+                rs.getString("source"),
+                rs.getDouble("score"),
+                rs.getDouble("overlap_score"),
+                rs.getDouble("gap_penalty"),
+                rs.getDouble("bonus_score"),
+                rs.getString("overlap_topk"),
+                rs.getString("gaps_topk"),
+                rs.getString("strengths_topk")
+        ), matchRunId);
+    }
+
     public record TagWeight(String canonical, double totalWeight, int tagCount, double avgWeight) {}
+
+    public record MatchResultRow(
+            long matchRunId,
+            String source,
+            double score,
+            double overlapScore,
+            double gapPenalty,
+            double bonusScore,
+            String overlapTopkJson,
+            String gapsTopkJson,
+            String strengthsTopkJson
+    ) {}
 }
