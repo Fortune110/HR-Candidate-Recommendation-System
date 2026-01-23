@@ -2,6 +2,8 @@ package com.fortune.resumeblueprint.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fortune.resumeblueprint.api.dto.AnalyzeResponse;
+import com.fortune.resumeblueprint.api.dto.ResumeDocumentResponse;
+import com.fortune.resumeblueprint.api.dto.ResumeSummaryResponse;
 import com.fortune.resumeblueprint.infra.LlmClient;
 import com.fortune.resumeblueprint.repo.BaselineRepo;
 import com.fortune.resumeblueprint.repo.BlueprintRepo;
@@ -12,7 +14,9 @@ import org.springframework.stereotype.Service;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class ResumeService {
@@ -35,6 +39,28 @@ public class ResumeService {
     public long ingest(String candidateId, String text) {
         String hash = "sha256:" + sha256(text);
         return repo.saveDocument("candidate_resume", candidateId, hash, text);
+    }
+
+    public Optional<ResumeDocumentResponse> findDocument(long documentId) {
+        return repo.findDocumentById(documentId)
+                .map(row -> new ResumeDocumentResponse(
+                        row.documentId(),
+                        row.entityId(),
+                        row.contentHash(),
+                        row.contentText(),
+                        row.createdAt()
+                ));
+    }
+
+    public List<ResumeSummaryResponse> listDocuments(int limit, int offset) {
+        return repo.listDocuments(limit, offset).stream()
+                .map(row -> new ResumeSummaryResponse(
+                        row.documentId(),
+                        row.entityId(),
+                        row.contentHash(),
+                        row.createdAt()
+                ))
+                .toList();
     }
 
     public AnalyzeResponse analyzeBootstrap(long documentId, String resumeText) {
