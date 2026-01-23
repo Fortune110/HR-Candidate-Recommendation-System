@@ -3,6 +3,10 @@ package com.fortune.resumeblueprint.repo;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Optional;
+
 @Repository
 public class BlueprintRepo {
     private final JdbcTemplate jdbc;
@@ -23,6 +27,39 @@ public class BlueprintRepo {
         select document_id from up
         """;
         return jdbc.queryForObject(sql, Long.class, entityType, entityId, contentHash, contentText);
+    }
+
+    public Optional<ResumeDocument> findDocument(long documentId) {
+        String sql = """
+        select document_id, entity_type, entity_id, content_hash, content_text, created_at
+        from rb_document
+        where document_id = ?
+        """;
+        List<ResumeDocument> results = jdbc.query(sql, (rs, rowNum) -> new ResumeDocument(
+                rs.getLong("document_id"),
+                rs.getString("entity_type"),
+                rs.getString("entity_id"),
+                rs.getString("content_hash"),
+                rs.getString("content_text"),
+                rs.getObject("created_at", OffsetDateTime.class)
+        ), documentId);
+        return results.stream().findFirst();
+    }
+
+    public List<ResumeDocumentSummary> listDocuments(int limit) {
+        String sql = """
+        select document_id, entity_type, entity_id, content_hash, created_at
+        from rb_document
+        order by created_at desc
+        limit ?
+        """;
+        return jdbc.query(sql, (rs, rowNum) -> new ResumeDocumentSummary(
+                rs.getLong("document_id"),
+                rs.getString("entity_type"),
+                rs.getString("entity_id"),
+                rs.getString("content_hash"),
+                rs.getObject("created_at", OffsetDateTime.class)
+        ), limit);
     }
 
     public long saveRun(long documentId, String promptVersion, String modelName, String configJson) {
@@ -58,4 +95,21 @@ public class BlueprintRepo {
         jdbc.update("insert into rb_tag_evidence(extracted_tag_id, evidence_text) values (?, ?)",
                 extractedTagId, evidenceText);
     }
+
+    public record ResumeDocument(
+            long documentId,
+            String entityType,
+            String entityId,
+            String contentHash,
+            String contentText,
+            OffsetDateTime createdAt
+    ) {}
+
+    public record ResumeDocumentSummary(
+            long documentId,
+            String entityType,
+            String entityId,
+            String contentHash,
+            OffsetDateTime createdAt
+    ) {}
 }
