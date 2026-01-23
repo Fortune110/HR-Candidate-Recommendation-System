@@ -1,56 +1,69 @@
 # API Testing Guide
 
-## 快速开始
+## Quick Start
 
-### 一键运行 E2E 测试
+### One-command E2E Smoke Test
 
-在 PowerShell 中执行：
+Run in PowerShell:
 
 ```powershell
 .\requests\e2e_smoke.ps1
 ```
 
-或指定自定义 Base URL：
+Or specify a custom base URL:
 
 ```powershell
 .\requests\e2e_smoke.ps1 -BaseUrl "http://localhost:18080"
 ```
 
-## 测试流程
+## Test Flow
 
-E2E 脚本会自动执行以下步骤：
+The E2E script performs the following steps automatically:
 
-1. **检查/启动 Docker Compose**
-   - 检查 PostgreSQL 容器是否运行
-   - 如果未运行，尝试启动 `talent-archive-core/docker-compose.yml` 中的 postgres 服务
+1. **Check/Start Docker Compose**
+   - Check whether the PostgreSQL container is running
+   - If not running, attempt to start the `postgres` service in `talent-archive-core/docker-compose.yml`
 
-2. **启动 Spring Boot 应用**
-   - 检查应用是否已在运行（通过 health endpoint）
-   - 如果未运行，使用 `mvnw spring-boot:run` 启动应用
-   - 等待应用就绪（最多 60 秒）
+2. **Start Spring Boot Application**
+   - Check if the app is already running (via the health endpoint)
+   - If not running, start it with `mvnw spring-boot:run`
+   - Wait for the app to become ready (up to 60 seconds)
 
-3. **健康检查**
+3. **Health Check**
    - GET `/api/extract/health`
-   - 验证提取服务可用性
+   - Validate extract service availability
 
-4. **简历入库（Golden Path Step 1）**
+4. **Resume Ingestion (Golden Path Step 1)**
    - POST `/api/resumes`
-   - 读取 `samples/resume_001.txt`
-   - 验证返回 documentId
+   - Read `samples/resume_001.txt`
+   - Verify `documentId` is returned
 
-5. **实体提取（Golden Path Step 2）**
+5. **Entity Extraction (Golden Path Step 2)**
    - POST `/api/extract`
-   - 使用上一步得到的 documentId
-   - 注意：如果 extract-service (Python) 未运行，此步骤会警告但不失败
+   - Use the `documentId` from step 1
+   - Note: If extract-service (Python) is not running, this step warns but does not fail
 
-6. **匹配查询（Golden Path Step 3）**
+6. **Match Query (Golden Path Step 3)**
    - POST `/api/match`
-   - 使用第一步得到的 documentId
-   - 注意：如果没有成功画像数据，此步骤会警告但不失败
+   - Use the `documentId` from step 1
+   - Note: If no success profile data exists, this step warns but does not fail
 
-## 输出说明
+## Query Endpoints (for verifying writes)
 
-### 成功输出示例
+```powershell
+# Resume detail
+Invoke-WebRequest -Uri "http://localhost:18080/api/resumes/{documentId}" -UseBasicParsing
+
+# Resume list
+Invoke-WebRequest -Uri "http://localhost:18080/api/resumes?limit=50&offset=0" -UseBasicParsing
+
+# Match result
+Invoke-WebRequest -Uri "http://localhost:18080/api/match/{matchRunId}" -UseBasicParsing
+```
+
+## Output Notes
+
+### Success Output Example
 
 ```
 ========================================
@@ -86,7 +99,7 @@ Base URL: http://localhost:18080
 ========================================
 ```
 
-### 失败输出示例
+### Failure Output Example
 
 ```
 [10:30:17] [FAIL] Health check failed
@@ -98,101 +111,68 @@ Base URL: http://localhost:18080
 ```
 
 Exit Code:
-- `0` = 所有关键测试通过
-- `1` = 关键测试失败（健康检查或简历入库失败）
+- `0` = all critical tests passed
+- `1` = a critical test failed (health check or resume ingestion)
 
-## 常见问题排查
+## Common Troubleshooting
 
-### 1. 端口冲突问题
+### 1. Port Conflict
 
-**问题：** 应用配置使用端口 `55433` 连接数据库，但 docker-compose 映射的是 `55434`
+**Issue:** Database port `55434` is already in use
 
-**解决方案：**
+**Resolution:**
+- Check which process is using the port: `netstat -ano | findstr :55434`
+- Free the port or adjust the docker-compose port mapping to match `application.yml`
 
-#### 方案 A：修改 docker-compose.yml（推荐）
+### 2. Database Name/User Mismatch
 
-编辑 `talent-archive-core/docker-compose.yml`：
+**Issue:** Application config and docker-compose are not using the same database/user
 
-```yaml
-services:
-  postgres:
-    ports:
-      - "55433:5432"  # 改为 55433
-```
+**Default Config:**
+- Database: `resume_blueprint_db`
+- User: `rb_user`
+- Password: `rb_password`
 
-然后重启容器：
-```powershell
-cd talent-archive-core
-docker-compose down
-docker-compose up -d postgres
-```
+**Resolution:** Ensure `application.yml` matches `talent-archive-core/docker-compose.yml`.
 
-#### 方案 B：修改应用配置
+### 3. Application Startup Failure
 
-编辑 `resume-blueprint/resume-blueprint-api/src/main/resources/application.yml`：
+**Checklist:**
+- [ ] Java 21+ installed: `java -version`
+- [ ] Maven wrapper present: `resume-blueprint/resume-blueprint-api/mvnw.cmd`
+- [ ] Port 18080 not in use: `netstat -ano | findstr :18080`
+- [ ] Database is running and reachable
 
-```yaml
-spring:
-  datasource:
-    url: jdbc:postgresql://127.0.0.1:55434/talent_archive  # 改为 55434
-```
-
-**注意：** 根据约束，不允许修改生产代码。如果必须修改，请仅修改测试环境的配置。
-
-### 2. 数据库名称/用户不匹配
-
-**问题：** 应用配置使用的数据库名/用户与 docker-compose 不一致
-
-应用配置：
-- 数据库：`talent_archive`
-- 用户：`archive_user`
-- 密码：`archive_pass`
-
-Docker Compose：
-- 数据库：`resume_blueprint_db`
-- 用户：`rb_user`
-- 密码：`rb_password`
-
-**解决方案：** 需要手动创建数据库或修改 docker-compose 环境变量，使其与应用配置匹配。
-
-### 3. 应用启动失败
-
-**检查清单：**
-- [ ] Java 21+ 已安装：`java -version`
-- [ ] Maven wrapper 存在：`resume-blueprint/resume-blueprint-api/mvnw.cmd`
-- [ ] 端口 18080 未被占用：`netstat -ano | findstr :18080`
-- [ ] 数据库连接正常：检查数据库是否运行并可连接
-
-**查看日志：**
+**View Logs:**
 ```powershell
 cd resume-blueprint\resume-blueprint-api
 .\mvnw.cmd spring-boot:run
 ```
 
-### 4. Extract Service 不可用
+### 4. Extract Service Unavailable
 
-**现象：** Extract 测试显示警告 "Extraction service is unavailable"
+**Symptom:** Extract test shows warning "Extraction service is unavailable"
 
-**原因：** Python extract-service 未启动
+**Cause:** Python extract-service is not running
 
-**解决方案：**
+**Resolution:**
 ```powershell
 cd talent-archive-core
 docker-compose up -d extract-service
 ```
 
-等待服务启动（约 40 秒），然后验证：
+Wait for the service to start (about 40 seconds), then verify:
 ```powershell
 Invoke-WebRequest -Uri "http://localhost:5000/health" -UseBasicParsing
 ```
 
-### 5. Match 返回空结果
+### 5. Match Returns Empty Results
 
-**现象：** Match 测试通过但返回空的 matches 列表
+**Symptom:** Match test passes but returns an empty `matches` list
 
-**原因：** 数据库中没有成功画像（Success Profiles）数据
+**Cause:** No success profile data in the database
 
-**解决方案：** 这是正常的。可以通过以下 API 导入测试数据：
+**Resolution:** This is expected. You can import test data using:
 ```powershell
 $body = @{
     source = "internal_employee"
@@ -206,41 +186,41 @@ Invoke-WebRequest -Uri "http://localhost:18080/api/success-profiles/import" `
     -Method POST -Body $body -ContentType "application/json"
 ```
 
-## 使用 HTTP Client 文件
+## HTTP Client File
 
-`api.http` 文件适用于 VS Code REST Client 插件或 IntelliJ HTTP Client。
+The `api.http` file works with the VS Code REST Client extension or the IntelliJ HTTP Client.
 
 ### VS Code
-1. 安装 "REST Client" 扩展
-2. 打开 `requests/api.http`
-3. 设置环境变量 `baseUrl = http://localhost:18080`
-4. 点击请求上方的 "Send Request"
+1. Install the "REST Client" extension
+2. Open `requests/api.http`
+3. Set environment variable `baseUrl = http://localhost:18080`
+4. Click "Send Request" above the request
 
 ### IntelliJ IDEA
-1. 打开 `requests/api.http`
-2. 点击请求左侧的运行按钮
+1. Open `requests/api.http`
+2. Click the run icon next to the request
 
-## 日志查看
+## Log Viewing
 
-### Spring Boot 应用日志
-如果应用在前台运行，日志会直接输出到控制台。
+### Spring Boot Application Logs
+If the app runs in the foreground, logs are printed to the console.
 
-如果在后台运行，日志通常位于：
-- Windows: 查看启动的 PowerShell 窗口
-- 或重定向到文件：`.\mvnw.cmd spring-boot:run > app.log 2>&1`
+If it runs in the background, logs are usually in:
+- Windows: the PowerShell window that started the app
+- Or redirected to a file: `\mvnw.cmd spring-boot:run > app.log 2>&1`
 
-### Docker 容器日志
+### Docker Container Logs
 ```powershell
-# PostgreSQL 日志
+# PostgreSQL logs
 docker logs resume_blueprint_postgres
 
-# Extract Service 日志
+# Extract Service logs
 docker logs resume_blueprint_extract
 ```
 
-## 性能测试
+## Performance Testing
 
-对于性能测试，可以多次调用 API：
+You can call the API repeatedly for performance testing:
 
 ```powershell
 $resumeText = Get-Content "samples\resume_001.txt" -Raw
@@ -254,8 +234,8 @@ Measure-Command {
 }
 ```
 
-## 下一步
+## Next Steps
 
-- 查看 `docs/TESTING.md` 了解详细的测试验收标准
-- 运行 JUnit 集成测试：`.\resume-blueprint\resume-blueprint-api\mvnw.cmd test`
-- 查看 API 文档（如果有 Swagger，通常位于 `/swagger-ui.html` 或 `/v3/api-docs`）
+- See `docs/TESTING.md` for detailed test acceptance criteria
+- Run JUnit integration tests: `.\resume-blueprint\resume-blueprint-api\mvnw.cmd test`
+- View API docs (if Swagger is enabled): `/swagger-ui/index.html` or `/v3/api-docs`

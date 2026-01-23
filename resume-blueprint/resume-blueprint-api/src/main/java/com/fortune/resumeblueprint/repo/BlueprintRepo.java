@@ -3,6 +3,10 @@ package com.fortune.resumeblueprint.repo;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Optional;
+
 @Repository
 public class BlueprintRepo {
     private final JdbcTemplate jdbc;
@@ -58,4 +62,54 @@ public class BlueprintRepo {
         jdbc.update("insert into rb_tag_evidence(extracted_tag_id, evidence_text) values (?, ?)",
                 extractedTagId, evidenceText);
     }
+
+    public Optional<DocumentRow> findDocument(long documentId) {
+        String sql = """
+        select document_id, entity_type, entity_id, content_hash, content_text, created_at
+        from rb_document
+        where document_id = ?
+        """;
+        List<DocumentRow> rows = jdbc.query(sql, (rs, rowNum) -> new DocumentRow(
+                rs.getLong("document_id"),
+                rs.getString("entity_type"),
+                rs.getString("entity_id"),
+                rs.getString("content_hash"),
+                rs.getString("content_text"),
+                rs.getObject("created_at", OffsetDateTime.class)
+        ), documentId);
+        return rows.stream().findFirst();
+    }
+
+    public List<DocumentSummaryRow> listDocuments(int limit, int offset) {
+        String sql = """
+        select document_id, entity_type, entity_id, content_hash, created_at
+        from rb_document
+        order by document_id desc
+        limit ? offset ?
+        """;
+        return jdbc.query(sql, (rs, rowNum) -> new DocumentSummaryRow(
+                rs.getLong("document_id"),
+                rs.getString("entity_type"),
+                rs.getString("entity_id"),
+                rs.getString("content_hash"),
+                rs.getObject("created_at", OffsetDateTime.class)
+        ), limit, offset);
+    }
+
+    public record DocumentRow(
+            long documentId,
+            String entityType,
+            String entityId,
+            String contentHash,
+            String contentText,
+            OffsetDateTime createdAt
+    ) {}
+
+    public record DocumentSummaryRow(
+            long documentId,
+            String entityType,
+            String entityId,
+            String contentHash,
+            OffsetDateTime createdAt
+    ) {}
 }

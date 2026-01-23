@@ -2,6 +2,7 @@ package com.fortune.resumeblueprint.api;
 
 import com.fortune.resumeblueprint.api.dto.MatchRequest;
 import com.fortune.resumeblueprint.api.dto.MatchResponse;
+import com.fortune.resumeblueprint.api.dto.MatchRunResponse;
 import com.fortune.resumeblueprint.service.MatchService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
@@ -53,5 +54,10 @@ public class MatchController {
                 .toList();
         
         return new MatchResponse(result.matchRunId(), responseMatches);
+    }
+
+    @GetMapping("/{matchRunId}")
+    public MatchRunResponse getMatchRun(@PathVariable long matchRunId) {
+        return matchService.getMatchRun(matchRunId);
     }
 }

@@ -3,7 +3,9 @@ package com.fortune.resumeblueprint.repo;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public class MatchRepo {
@@ -79,5 +81,71 @@ public class MatchRepo {
         ), resumeDocumentId, resumeDocumentId);
     }
 
+    public Optional<MatchRunRow> findMatchRun(long matchRunId) {
+        String sql = """
+            select match_run_id, resume_document_id, target, role_filter, level_filter, algo_version, created_at
+            from rb_match_run
+            where match_run_id = ?
+            """;
+        List<MatchRunRow> rows = jdbc.query(sql, (rs, rowNum) -> new MatchRunRow(
+                rs.getLong("match_run_id"),
+                rs.getLong("resume_document_id"),
+                rs.getString("target"),
+                rs.getString("role_filter"),
+                rs.getString("level_filter"),
+                rs.getString("algo_version"),
+                rs.getObject("created_at", OffsetDateTime.class)
+        ), matchRunId);
+        return rows.stream().findFirst();
+    }
+
+    public List<MatchResultRow> listMatchResults(long matchRunId) {
+        String sql = """
+            select sp.source,
+                   mr.score,
+                   mr.overlap_score,
+                   mr.gap_penalty,
+                   mr.bonus_score,
+                   mr.overlap_topk::text as overlap_topk,
+                   mr.gaps_topk::text as gaps_topk,
+                   mr.strengths_topk::text as strengths_topk
+            from rb_match_result mr
+            join rb_success_profile sp on sp.profile_id = mr.profile_id
+            where mr.match_run_id = ?
+            order by mr.score desc
+            """;
+        return jdbc.query(sql, (rs, rowNum) -> new MatchResultRow(
+                rs.getString("source"),
+                rs.getDouble("score"),
+                rs.getDouble("overlap_score"),
+                rs.getDouble("gap_penalty"),
+                rs.getDouble("bonus_score"),
+                rs.getString("overlap_topk"),
+                rs.getString("gaps_topk"),
+                rs.getString("strengths_topk")
+        ), matchRunId);
+    }
+
     public record TagWeight(String canonical, double totalWeight, int tagCount, double avgWeight) {}
+
+    public record MatchRunRow(
+            long matchRunId,
+            long resumeDocumentId,
+            String target,
+            String roleFilter,
+            String levelFilter,
+            String algoVersion,
+            OffsetDateTime createdAt
+    ) {}
+
+    public record MatchResultRow(
+            String source,
+            double score,
+            double overlapScore,
+            double gapPenalty,
+            double bonusScore,
+            String overlapTopkJson,
+            String gapsTopkJson,
+            String strengthsTopkJson
+    ) {}
 }
