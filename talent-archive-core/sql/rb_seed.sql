@@ -41,17 +41,7 @@ values
   (1, 'py', 'py', 'skill/python', 'seed'),
   (1, 'Python', 'python', 'skill/python', 'seed'),
   (1, 'Python3', 'python3', 'skill/python', 'seed'),
-  (1, 'python语言', 'python语言', 'skill/python', 'seed'),
-
-  -- Degree variants (Chinese)
-  (1, '本科', '本科', 'degree/bachelor', 'seed'),
-  (1, '学士', '学士', 'degree/bachelor', 'seed'),
-  (1, '硕士', '硕士', 'degree/master', 'seed'),
-
-  -- Experience variants (Chinese)
-  (1, '3年经验', '3年经验', 'exp/3-5', 'seed'),
-  (1, '三年经验', '三年经验', 'exp/3-5', 'seed'),
-  (1, '5年经验', '5年经验', 'exp/5-10', 'seed'),
+  (1, 'python-language', 'python-language', 'skill/python', 'seed'),
 
   -- Degree variants (EN)
   (1, 'bachelor', 'bachelor', 'degree/bachelor', 'seed-en'),

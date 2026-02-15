@@ -1,0 +1,2 @@
+# This directory stores trained ML models
+# Models are saved with format: model_<type>_<timestamp>.joblib

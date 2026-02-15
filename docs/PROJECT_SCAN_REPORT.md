@@ -1,5 +1,6 @@
 # Project Scan Report
 
+<<<<<<< HEAD
 ## Project Overview
 
 **Project Name:** HR Candidate Recommendation System  
@@ -70,14 +71,35 @@
 - **Build Context:** `./extract-service`
 
 ### Startup Command
+=======
+## Overview
+- Project: HR Candidate Recommendation System
+- Stack: Spring Boot, Java 21, PostgreSQL 16, Python (Flask)
+- Main app: `resume-blueprint/resume-blueprint-api`
+
+## Startup
+```powershell
+cd resume-blueprint\resume-blueprint-api
+.\mvnw.cmd spring-boot:run
+```
+Default port: `18080`
+
+## Docker Compose
+>>>>>>> 82b9b5f (feat: ML repro metrics, pipeline, Flyway migrations, candidate/upload APIs)
 ```powershell
 cd talent-archive-core
 docker-compose up -d postgres
 docker-compose up -d extract-service
 ```
 
----
+## API endpoints (high level)
+- `POST /api/resumes`
+- `POST /api/extract`
+- `POST /api/match`
+- `POST /api/baseline/build`
+- `POST /api/success-profiles/import`
 
+<<<<<<< HEAD
 ## 3. API Endpoint Inventory
 
 ### 3.1 Resume Controller
@@ -248,3 +270,8 @@ Based on the current API set, the following flows are recommended for verificati
 
 **Report Generated:** 2024-01-01  
 **Scan Method:** Manual code review + automated scan
+=======
+## Notes
+- Health check: `GET /api/extract/health`
+- Extract depends on external Python service
+>>>>>>> 82b9b5f (feat: ML repro metrics, pipeline, Flyway migrations, candidate/upload APIs)

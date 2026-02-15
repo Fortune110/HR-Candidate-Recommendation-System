@@ -1,21 +1,35 @@
 # API Testing Guide
 
+<<<<<<< HEAD
 ## Quick Start
 
 ### One-command E2E Smoke Test
 
 Run in PowerShell:
 
+=======
+## Quick start
+>>>>>>> 82b9b5f (feat: ML repro metrics, pipeline, Flyway migrations, candidate/upload APIs)
 ```powershell
 .\requests\e2e_smoke.ps1
 ```
 
+<<<<<<< HEAD
 Or specify a custom base URL:
+=======
+## What the script does
+1. Checks Docker Compose (Postgres)
+2. Starts the Spring Boot app if needed
+3. Calls health endpoint
+4. Runs resume ingestion, extract, and match
+>>>>>>> 82b9b5f (feat: ML repro metrics, pipeline, Flyway migrations, candidate/upload APIs)
 
-```powershell
-.\requests\e2e_smoke.ps1 -BaseUrl "http://localhost:18080"
-```
+## Common issues
+- Port mismatch: check `application.yml` and docker-compose ports
+- DB not running: start postgres in `talent-archive-core`
+- Extract service down: `docker-compose up -d extract-service`
 
+<<<<<<< HEAD
 ## Test Flow
 
 The E2E script performs the following steps automatically:
@@ -239,3 +253,7 @@ Measure-Command {
 - See `docs/TESTING.md` for detailed test acceptance criteria
 - Run JUnit integration tests: `.\resume-blueprint\resume-blueprint-api\mvnw.cmd test`
 - View API docs (if Swagger is enabled): `/swagger-ui/index.html` or `/v3/api-docs`
+=======
+## Manual calls
+Use `requests/api.http` with VS Code REST Client or IntelliJ HTTP client.
+>>>>>>> 82b9b5f (feat: ML repro metrics, pipeline, Flyway migrations, candidate/upload APIs)

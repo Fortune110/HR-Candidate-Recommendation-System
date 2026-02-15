@@ -1,0 +1,4 @@
+# This directory stores training and evaluation metrics
+# Metrics are saved as JSON files with format:
+# - metrics_<timestamp>.json (training)
+# - evaluate_<timestamp>.json (evaluation)

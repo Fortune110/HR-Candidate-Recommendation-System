@@ -4,7 +4,10 @@
 target/
 build/
 .gradle/
+.m2-repo/
 *.log
 .env
 *.bak
-
+__pycache__/
+*.pyc
+*.pyo

@@ -1,0 +1,11 @@
+---
+description: Rule for git uploads to GitHub
+globs: 
+alwaysApply: true
+---
+
+# Git uploads to GitHub
+
+When staging, committing, or pushing to GitHub:
+- Do **not** mention Chinese/English change problems, encoding issues, or line-ending (LF/CRLF) warnings in commit messages or in the summary to the user.
+- Keep commit messages and upload summaries focused on the actual changes (features, fixes, files).
