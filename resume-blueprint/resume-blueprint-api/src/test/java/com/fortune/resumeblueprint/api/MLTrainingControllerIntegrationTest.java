@@ -42,15 +42,7 @@ class MLTrainingControllerIntegrationTest {
         String candidateId = "test_ml_hired_001";
         Long jobId = 999L;
 
-        // Create candidate and update stage to hired with job_id
-        candidateService.updateStage(candidateId, new ChangeStageRequest(
-                "hired",
-                "hr_user_001",
-                "Test hired for ML training",
-                null,
-                jobId,
-                false
-        ));
+        moveCandidateToHired(candidateId, jobId, "hr_user_001");
 
         // When: Call the API with CSV format
         mockMvc.perform(get("/api/ml/training-examples")
@@ -100,15 +92,8 @@ class MLTrainingControllerIntegrationTest {
         // Given: Create test data without job_id filter
         String candidateId1 = "test_ml_no_filter_001";
         Long jobId1 = 777L;
-        
-        candidateService.updateStage(candidateId1, new ChangeStageRequest(
-                "hired",
-                "hr_user_003",
-                "Test for no filter",
-                null,
-                jobId1,
-                false
-        ));
+
+        moveCandidateToHired(candidateId1, jobId1, "hr_user_003");
 
         // When: Call the API without jobId parameter
         mockMvc.perform(get("/api/ml/training-examples")
@@ -131,5 +116,18 @@ class MLTrainingControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith("text/csv"))
                 .andExpect(content().string(""));
+    }
+
+    private void moveCandidateToHired(String candidateId, Long jobId, String changedBy) {
+        candidateService.updateStage(candidateId, new ChangeStageRequest(
+                "screened", changedBy, "step screened", null, jobId, false));
+        candidateService.updateStage(candidateId, new ChangeStageRequest(
+                "shortlisted", changedBy, "step shortlisted", null, jobId, false));
+        candidateService.updateStage(candidateId, new ChangeStageRequest(
+                "interviewed", changedBy, "step interviewed", null, jobId, false));
+        candidateService.updateStage(candidateId, new ChangeStageRequest(
+                "offer", changedBy, "step offer", null, jobId, false));
+        candidateService.updateStage(candidateId, new ChangeStageRequest(
+                "hired", changedBy, "step hired", null, jobId, false));
     }
 }

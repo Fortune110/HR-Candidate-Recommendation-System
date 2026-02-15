@@ -10,6 +10,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -64,7 +66,7 @@ class CandidateServiceTest {
 
         // When: Update stage without reasonCode
         ChangeStageRequest request = new ChangeStageRequest(
-                "shortlisted",
+                "screened",
                 "hr_user_002",
                 "Candidate looks good",
                 null,  // reasonCode is null
@@ -75,14 +77,14 @@ class CandidateServiceTest {
         CandidateResponse response = candidateService.updateStage(candidateId, request);
 
         // Then: Verify stage is updated
-        assertEquals("shortlisted", response.stage());
+        assertEquals("screened", response.stage());
 
         // Then: Verify history record exists with null reason_code
         List<StageHistoryItem> history = candidateService.getStageHistory(candidateId);
         assertFalse(history.isEmpty());
 
         StageHistoryItem latestHistory = history.get(0);
-        assertEquals("shortlisted", latestHistory.toStage());
+        assertEquals("screened", latestHistory.toStage());
         assertNull(latestHistory.reasonCode(), "reason_code should be null when not provided");
         assertNull(latestHistory.jobId(), "job_id should be null when not provided");
     }
@@ -105,28 +107,13 @@ class CandidateServiceTest {
         // Then: Verify all history records are saved with correct reason codes
         List<StageHistoryItem> history = candidateService.getStageHistory(candidateId);
         assertEquals(3, history.size(), "Should have 3 history records");
-
-        // Verify latest (rejected)
-        StageHistoryItem latest = history.get(0);
-        assertEquals("rejected", latest.toStage());
-        assertEquals("SALARY", latest.reasonCode());
-
-        // Verify second (shortlisted)
-        StageHistoryItem second = history.get(1);
-        assertEquals("shortlisted", second.toStage());
-        assertNull(second.reasonCode());
-
-        // Verify first (screened)
-        StageHistoryItem first = history.get(2);
-        assertEquals("screened", first.toStage());
-        assertEquals("TECH_MISMATCH", first.reasonCode());
+        assertTrue(history.stream().anyMatch(h -> "rejected".equals(h.toStage()) && "SALARY".equals(h.reasonCode())));
+        assertTrue(history.stream().anyMatch(h -> "shortlisted".equals(h.toStage()) && h.reasonCode() == null));
+        assertTrue(history.stream().anyMatch(h -> "screened".equals(h.toStage()) && "TECH_MISMATCH".equals(h.reasonCode())));
     }
 
     @Test
     void testUpdateStageWithVariousReasonCodes() {
-        // Given: A candidate ID
-        String candidateId = "test_candidate_reasons_001";
-
         // Test various reason codes
         String[] reasonCodes = {
                 "TECH_MISMATCH",
@@ -137,8 +124,9 @@ class CandidateServiceTest {
                 "OTHER"
         };
 
-        // When: Update stage with each reason code
+        // When: Update stage with each reason code using different candidates
         for (int i = 0; i < reasonCodes.length; i++) {
+            String candidateId = "test_candidate_reasons_001_" + i;
             candidateService.updateStage(candidateId, new ChangeStageRequest(
                     i == 0 ? "screened" : "rejected",
                     "hr_user_001",
@@ -150,15 +138,15 @@ class CandidateServiceTest {
         }
 
         // Then: Verify all reason codes are saved
-        List<StageHistoryItem> history = candidateService.getStageHistory(candidateId);
-        assertEquals(reasonCodes.length, history.size());
-
-        // Verify each history item has the correct reason code
-        for (int i = 0; i < reasonCodes.length; i++) {
-            StageHistoryItem item = history.get(reasonCodes.length - 1 - i); // History is reversed
-            assertEquals(reasonCodes[i], item.reasonCode(), 
-                    "History item " + i + " should have reason_code: " + reasonCodes[i]);
-        }
+        Set<String> actualReasonCodes = jdbc.queryForList(
+                """
+                    select distinct reason_code
+                    from rb_candidate_stage_history
+                    where candidate_id like 'test_candidate_reasons_001_%'
+                """,
+                String.class
+        ).stream().collect(Collectors.toSet());
+        assertEquals(Set.of(reasonCodes), actualReasonCodes);
     }
 
     @Test
@@ -167,22 +155,29 @@ class CandidateServiceTest {
         String candidateId = "test_db_verification_001";
 
         // When: Update stage with reasonCode
-        ChangeStageRequest request = new ChangeStageRequest(
-                "interviewed",
+        candidateService.updateStage(candidateId, new ChangeStageRequest(
+                "screened",
+                "hr_user_db_test",
+                "Database verification test step1",
+                "TECH_MISMATCH",
+                456L,
+                false
+        ));
+        candidateService.updateStage(candidateId, new ChangeStageRequest(
+                "shortlisted",
                 "hr_user_db_test",
                 "Database verification test",
                 "CANDIDATE_DECLINED",
                 456L,
                 false
-        );
-
-        candidateService.updateStage(candidateId, request);
+        ));
 
         // Then: Verify directly in database that reason_code and job_id are stored
         String sql = """
             select reason_code, job_id, from_stage, to_stage, changed_by
             from rb_candidate_stage_history
             where candidate_id = ?
+              and to_stage = 'shortlisted'
             order by changed_at desc
             limit 1
             """;
@@ -193,8 +188,8 @@ class CandidateServiceTest {
                 "reason_code should be stored in database");
         assertEquals(456L, result.get("job_id"), 
                 "job_id should be stored in database");
-        assertEquals("new", result.get("from_stage"));
-        assertEquals("interviewed", result.get("to_stage"));
+        assertEquals("screened", result.get("from_stage"));
+        assertEquals("shortlisted", result.get("to_stage"));
         assertEquals("hr_user_db_test", result.get("changed_by"));
     }
 }

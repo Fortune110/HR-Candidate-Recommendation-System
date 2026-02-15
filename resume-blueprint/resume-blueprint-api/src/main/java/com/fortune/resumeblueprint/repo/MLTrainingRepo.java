@@ -21,7 +21,7 @@ public class MLTrainingRepo {
      * @return List of training examples as maps (column name -> value)
      */
     public List<Map<String, Object>> getTrainingExamples(Long jobId) {
-        String sql = """
+        String baseSql = """
             select 
                 job_id,
                 candidate_id,
@@ -39,10 +39,20 @@ public class MLTrainingRepo {
                 match_created_at,
                 reason_code
             from ml_training_examples_v1
-            where (? is null or job_id = ?)
+            """;
+
+        if (jobId == null) {
+            String sql = baseSql + """
+                order by job_id, candidate_id, stage_changed_at desc
+                """;
+            return jdbc.queryForList(sql);
+        }
+
+        String sql = baseSql + """
+            where job_id = ?
             order by job_id, candidate_id, stage_changed_at desc
             """;
-        return jdbc.queryForList(sql, jobId, jobId);
+        return jdbc.queryForList(sql, jobId);
     }
 
     /**
