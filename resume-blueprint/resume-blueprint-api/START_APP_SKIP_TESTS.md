@@ -1,32 +1,32 @@
-# 启动应用（跳过测试）
+# Start the app (skip tests)
 
-## 问题
-测试类有编译错误，但主应用代码没问题。
+## Problem
+Test classes fail to compile, but the main app code is fine.
 
-## 解决方案：暂时重命名测试文件
+## Solution: temporarily rename test files
 
-在启动应用前，请执行：
+Before starting the app, run:
 
 ```powershell
 cd C:\HR-Candidate-Recommendation-System\resume-blueprint\resume-blueprint-api
 
-# 暂时重命名测试文件，避免编译
+# Temporarily rename test files to avoid compilation
 Move-Item -Path "src\test\java\com\fortune\resumeblueprint\api\ResumeControllerIntegrationTest.java" -Destination "src\test\java\com\fortune\resumeblueprint\api\ResumeControllerIntegrationTest.java.bak" -ErrorAction SilentlyContinue
 Move-Item -Path "src\test\java\com\fortune\resumeblueprint\api\ExtractControllerIntegrationTest.java" -Destination "src\test\java\com\fortune\resumeblueprint\api\ExtractControllerIntegrationTest.java.bak" -ErrorAction SilentlyContinue
 Move-Item -Path "src\test\java\com\fortune\resumeblueprint\api\MatchControllerIntegrationTest.java" -Destination "src\test\java\com\fortune\resumeblueprint\api\MatchControllerIntegrationTest.java.bak" -ErrorAction SilentlyContinue
 
-# 然后启动应用
+# Then start the app
 .\mvnw.cmd spring-boot:run
 ```
 
-## 或者：使用正确的 PowerShell 语法跳过测试
+## Alternative: skip tests with PowerShell syntax
 
 ```powershell
 cd C:\HR-Candidate-Recommendation-System\resume-blueprint\resume-blueprint-api
 $env:MAVEN_OPTS="-DskipTests"; .\mvnw.cmd spring-boot:run
 ```
 
-或者：
+Or:
 
 ```powershell
 cd C:\HR-Candidate-Recommendation-System\resume-blueprint\resume-blueprint-api

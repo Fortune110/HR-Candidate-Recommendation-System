@@ -70,3 +70,132 @@ Content-Type: application/json
 {
   "text": "Resume text here..."
 }
+
+### 9. Candidate Stage Management
+
+### 9.1 Get Candidate Info
+GET {{baseUrl}}/api/candidates/test_candidate_001
+Accept: application/json
+
+### 9.2 Update Candidate Stage (with reasonCode)
+PATCH {{baseUrl}}/api/candidates/test_candidate_001/stage
+Content-Type: application/json
+
+{
+  "toStage": "screened",
+  "changedBy": "hr_user_001",
+  "note": "Passed initial screening",
+  "reasonCode": "TECH_MISMATCH",
+  "jobId": 123,
+  "force": false
+}
+
+### 9.3 Update Candidate Stage (without reasonCode)
+PATCH {{baseUrl}}/api/candidates/test_candidate_002/stage
+Content-Type: application/json
+
+{
+  "toStage": "shortlisted",
+  "changedBy": "hr_user_002",
+  "note": "Candidate looks promising",
+  "reasonCode": null,
+  "jobId": null,
+  "force": false
+}
+
+### 9.4 Update Candidate Stage to Rejected (with reasonCode)
+PATCH {{baseUrl}}/api/candidates/test_candidate_001/stage
+Content-Type: application/json
+
+{
+  "toStage": "rejected",
+  "changedBy": "hr_user_001",
+  "note": "Final rejection: salary expectations mismatch",
+  "reasonCode": "SALARY",
+  "jobId": 123,
+  "force": true
+}
+
+### 9.5 Get Candidate Stage History
+GET {{baseUrl}}/api/candidates/test_candidate_001/stage/history
+Accept: application/json
+
+### 9.6 Test Various Reason Codes
+
+# TECH_MISMATCH
+PATCH {{baseUrl}}/api/candidates/test_reason_001/stage
+Content-Type: application/json
+
+{
+  "toStage": "rejected",
+  "changedBy": "hr_user_001",
+  "note": "Technical skills mismatch",
+  "reasonCode": "TECH_MISMATCH",
+  "jobId": 456,
+  "force": true
+}
+
+# SALARY
+PATCH {{baseUrl}}/api/candidates/test_reason_002/stage
+Content-Type: application/json
+
+{
+  "toStage": "rejected",
+  "changedBy": "hr_user_001",
+  "note": "Salary expectations mismatch",
+  "reasonCode": "SALARY",
+  "jobId": 456,
+  "force": true
+}
+
+# CANDIDATE_DECLINED
+PATCH {{baseUrl}}/api/candidates/test_reason_003/stage
+Content-Type: application/json
+
+{
+  "toStage": "rejected",
+  "changedBy": "hr_user_001",
+  "note": "Candidate declined the offer",
+  "reasonCode": "CANDIDATE_DECLINED",
+  "jobId": 456,
+  "force": true
+}
+
+# HC_FROZEN
+PATCH {{baseUrl}}/api/candidates/test_reason_004/stage
+Content-Type: application/json
+
+{
+  "toStage": "rejected",
+  "changedBy": "hr_user_001",
+  "note": "Headcount frozen",
+  "reasonCode": "HC_FROZEN",
+  "jobId": 456,
+  "force": true
+}
+
+# NO_SHOW
+PATCH {{baseUrl}}/api/candidates/test_reason_005/stage
+Content-Type: application/json
+
+{
+  "toStage": "rejected",
+  "changedBy": "hr_user_001",
+  "note": "No-show for interview",
+  "reasonCode": "NO_SHOW",
+  "jobId": 456,
+  "force": true
+}
+
+# OTHER
+PATCH {{baseUrl}}/api/candidates/test_reason_006/stage
+Content-Type: application/json
+
+{
+  "toStage": "rejected",
+  "changedBy": "hr_user_001",
+  "note": "Other reason",
+  "reasonCode": "OTHER",
+  "jobId": 456,
+  "force": true
+}

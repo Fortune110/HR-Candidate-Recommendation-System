@@ -32,10 +32,13 @@ create table if not exists rb_candidate_stage_history (
   to_stage text not null,                   -- new stage
   changed_by text not null,                 -- operator/user ID
   note text,                                -- optional note
-  changed_at timestamptz not null default now(),
-  -- Prevent duplicate history entries (idempotency)
-  unique(candidate_id, to_stage, changed_at, coalesce(changed_by, ''))
+  changed_at timestamptz not null default now()
 );
+
+-- Prevent duplicate history entries (idempotency)
+-- Note: Using unique index instead of table constraint to support coalesce()
+create unique index if not exists idx_candidate_stage_history_unique
+  on rb_candidate_stage_history(candidate_id, to_stage, changed_at, coalesce(changed_by, ''));
 
 -- Index for candidate history queries (most common: get history for a candidate)
 create index if not exists idx_candidate_stage_history_candidate 

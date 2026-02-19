@@ -52,7 +52,7 @@ public class SuccessProfileRepo {
             join rb_success_profile sp on sp.profile_id = spt.profile_id
             where sp.source = ?
               and sp.role = ?
-              and (? is null or sp.level = ?)
+              and sp.level = COALESCE(?, sp.level)
             group by spt.canonical
             order by total_weight desc
             """;
@@ -61,7 +61,7 @@ public class SuccessProfileRepo {
                 rs.getDouble("total_weight"),
                 rs.getInt("tag_count"),
                 rs.getDouble("avg_weight")
-        ), source, role, level, level);
+        ), source, role, level);
     }
 
     /**
@@ -73,9 +73,9 @@ public class SuccessProfileRepo {
             from rb_success_profile
             where source = ?
               and role = ?
-              and (? is null or level = ?)
+              and level = COALESCE(?, level)
             """;
-        return jdbc.queryForList(sql, Long.class, source, role, level, level);
+        return jdbc.queryForList(sql, Long.class, source, role, level);
     }
 
     public record TagWeight(String canonical, double totalWeight, int tagCount, double avgWeight) {}

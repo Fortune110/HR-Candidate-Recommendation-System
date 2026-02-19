@@ -28,3 +28,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 
 # Run the service
 CMD ["python", "extract_service.py", "5000"]
+

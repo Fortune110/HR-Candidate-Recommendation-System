@@ -1,51 +1,51 @@
-# 快速启动指南
+# Quick Start Guide
 
-## 当前状态 ✅
+## Current Status ✅
 
-- ✅ PostgreSQL 数据库：运行中（端口 55434）
-- ✅ Extract Service (Python)：运行中（端口 5000）
-- ⚠️ 后端应用：未启动（需要手动启动）
+- ✅ PostgreSQL Database: Running (Port 55434)
+- ✅ Extract Service (Python): Running (Port 5000)
+- ⚠️ Backend Application: Not Started (Manual startup required)
 
 ---
 
-## 启动步骤
+## Startup Steps
 
-### 步骤 1: 启动后端应用
+### Step 1: Start Backend Application
 
-**打开一个新的 PowerShell 窗口**，执行：
+**Open a new PowerShell window** and execute:
 
 ```powershell
-# 进入项目根目录
+# Navigate to project root
 cd C:\HR-Candidate-Recommendation-System
 
-# 进入后端目录
+# Navigate to backend directory
 cd resume-blueprint\resume-blueprint-api
 
-# 启动应用（这会占用当前窗口，显示日志）
+# Start application (this will occupy the current window, showing logs)
 .\mvnw.cmd spring-boot:run
 ```
 
-**等待看到：**
+**Wait to see:**
 ```
 Started ResumeBlueprintApiApplication in X.XXX seconds
 ```
 
-**如果看到数据库连接错误：**
-- 检查 application.yml 中的数据库配置是否正确（应该是 55434 / resume_blueprint_db / rb_user）
-- 确认数据库容器正在运行：`docker compose ps` (在 talent-archive-core 目录)
+**If you see database connection errors:**
+- Check if database configuration in application.yml is correct (should be 55434 / resume_blueprint_db / rb_user)
+- Confirm database container is running: `docker compose ps` (in talent-archive-core directory)
 
 ---
 
-### 步骤 2: 验证应用启动（在新窗口或原窗口）
+### Step 2: Verify Application Startup (in new window or original window)
 
-**打开另一个 PowerShell 窗口**，执行：
+**Open another PowerShell window** and execute:
 
 ```powershell
-# 健康检查
+# Health check
 Invoke-WebRequest -Uri "http://localhost:18080/api/extract/health" -UseBasicParsing
 ```
 
-**预期输出：**
+**Expected Output:**
 ```
 StatusCode        : 200
 Content           : {"runId":0,"message":"Extraction service is available"}
@@ -53,17 +53,17 @@ Content           : {"runId":0,"message":"Extraction service is available"}
 
 ---
 
-### 步骤 3: 运行 E2E 测试
+### Step 3: Run E2E Tests
 
 ```powershell
-# 回到项目根目录
+# Return to project root
 cd C:\HR-Candidate-Recommendation-System
 
-# 运行 E2E 测试
+# Run E2E tests
 .\requests\e2e_smoke.ps1
 ```
 
-**预期输出：**
+**Expected Output:**
 ```
 ========================================
   E2E Smoke Test - Resume Blueprint API
@@ -80,78 +80,78 @@ cd C:\HR-Candidate-Recommendation-System
 
 ---
 
-## 一键命令（如果你想让它在后台运行）
+## One-Click Command (If You Want It to Run in Background)
 
-如果你想在后台启动后端应用（不占用窗口），使用：
+If you want to start the backend application in the background (without occupying the window), use:
 
 ```powershell
 cd C:\HR-Candidate-Recommendation-System\resume-blueprint\resume-blueprint-api
 Start-Process powershell -ArgumentList "-NoExit", "-Command", ".\mvnw.cmd spring-boot:run"
 ```
 
-这会打开一个新窗口运行应用，你可以继续在当前窗口执行其他命令。
+This will open a new window to run the application, and you can continue executing other commands in the current window.
 
 ---
 
-## 故障排查
+## Troubleshooting
 
-### 问题：后端启动失败，提示数据库连接错误
+### Issue: Backend startup failed, database connection error
 
-**检查：**
-1. 数据库容器是否运行：
+**Check:**
+1. Is database container running:
    ```powershell
    cd C:\HR-Candidate-Recommendation-System\talent-archive-core
    docker compose ps
    ```
 
-2. 数据库配置是否正确：
+2. Is database configuration correct:
    ```powershell
    type C:\HR-Candidate-Recommendation-System\resume-blueprint\resume-blueprint-api\src\main\resources\application.yml
    ```
-   应该看到：
+   Should see:
    ```yaml
    url: jdbc:postgresql://127.0.0.1:55434/resume_blueprint_db
    username: rb_user
    password: rb_password
    ```
 
-3. 手动测试数据库连接：
+3. Manually test database connection:
    ```powershell
    cd C:\HR-Candidate-Recommendation-System\talent-archive-core
    docker compose exec postgres psql -U rb_user -d resume_blueprint_db -c "SELECT 1;"
    ```
 
-### 问题：端口 18080 被占用
+### Issue: Port 18080 is already in use
 
-**检查：**
+**Check:**
 ```powershell
 netstat -ano | findstr :18080
 ```
 
-**解决：**
-- 找到占用端口的进程 PID（最后一列）
-- 结束进程：`taskkill /PID <PID> /F`
-- 或者修改 application.yml 中的端口
+**Solution:**
+- Find the process PID using the port (last column)
+- Terminate process: `taskkill /PID <PID> /F`
+- Or modify the port in application.yml
 
 ---
 
-## 总结
+## Summary
 
-**最简单的启动方式（3个窗口）：**
+**Simplest startup method (3 windows):**
 
-1. **窗口1 - 后端应用（保持运行）：**
+1. **Window 1 - Backend Application (keep running):**
    ```powershell
    cd C:\HR-Candidate-Recommendation-System\resume-blueprint\resume-blueprint-api
    .\mvnw.cmd spring-boot:run
    ```
 
-2. **窗口2 - 等待20秒后验证：**
+2. **Window 2 - Wait 20 seconds then verify:**
    ```powershell
    Start-Sleep -Seconds 20
    Invoke-WebRequest -Uri "http://localhost:18080/api/extract/health" -UseBasicParsing
    ```
 
-3. **窗口3 - 运行测试：**
+3. **Window 3 - Run tests:**
    ```powershell
    cd C:\HR-Candidate-Recommendation-System
    .\requests\e2e_smoke.ps1
