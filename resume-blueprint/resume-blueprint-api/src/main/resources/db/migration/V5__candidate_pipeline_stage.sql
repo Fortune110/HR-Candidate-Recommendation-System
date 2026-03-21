@@ -34,7 +34,7 @@ create table if not exists rb_candidate_stage_history (
   note text,                                -- optional note
   changed_at timestamptz not null default now(),
   -- Prevent duplicate history entries (idempotency)
-  unique(candidate_id, to_stage, changed_at, coalesce(changed_by, ''))
+  unique(candidate_id, to_stage, changed_at, changed_by)
 );
 
 -- Index for candidate history queries (most common: get history for a candidate)

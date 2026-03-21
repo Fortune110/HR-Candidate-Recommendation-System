@@ -2,6 +2,8 @@ package com.fortune.resumeblueprint.infra;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -19,7 +21,9 @@ import java.util.Map;
  */
 @Component
 public class SpacyExtractorClient {
-    
+
+    private static final Logger log = LoggerFactory.getLogger(SpacyExtractorClient.class);
+
     private final WebClient webClient;
     private final ObjectMapper om = new ObjectMapper();
     
@@ -46,12 +50,13 @@ public class SpacyExtractorClient {
             payload.put("text", text);
             payload.put("doc_type", docType != null ? docType : "RESUME");
             
-            JsonNode response = webClient.post()
+            String raw = webClient.post()
                     .uri("/extract")
                     .bodyValue(payload)
                     .retrieve()
-                    .bodyToMono(JsonNode.class)
+                    .bodyToMono(String.class)
                     .block();
+            JsonNode response = raw != null ? om.readTree(raw) : null;
             
             if (response == null) {
                 return new ExtractionResult(List.of(), "Extraction failed: no response", "spacy+skillner", "1.0");
@@ -97,14 +102,16 @@ public class SpacyExtractorClient {
      */
     public boolean isHealthy() {
         try {
-            JsonNode response = webClient.get()
+            String raw = webClient.get()
                     .uri("/health")
                     .retrieve()
-                    .bodyToMono(JsonNode.class)
+                    .bodyToMono(String.class)
                     .block();
-            
+            JsonNode response = raw != null ? om.readTree(raw) : null;
+
             return response != null && "ok".equals(response.path("status").asText(""));
         } catch (Exception e) {
+            log.error("isHealthy() failed: {}", e.getMessage(), e);
             return false;
         }
     }

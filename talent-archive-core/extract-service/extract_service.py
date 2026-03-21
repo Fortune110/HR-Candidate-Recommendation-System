@@ -6,11 +6,26 @@ Integrates with 4-box framework: Extract -> Normalize -> Tagging -> Match
 Output format compatible with rb_extracted_tag / rb_tag_evidence tables.
 """
 
+import io
 import json
 import sys
 from typing import List, Dict, Any, Optional
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+
+try:
+    import pdfplumber
+    PDFPLUMBER_AVAILABLE = True
+except ImportError:
+    pdfplumber = None
+    PDFPLUMBER_AVAILABLE = False
+
+try:
+    from docx import Document as DocxDocument
+    DOCX_AVAILABLE = True
+except ImportError:
+    DocxDocument = None
+    DOCX_AVAILABLE = False
 
 try:
     import spacy
@@ -185,6 +200,52 @@ def normalize_canonical(entity: Dict[str, Any], entity_type: str) -> str:
         return f"other/{entity.get('normalized', '')}"
 
 
+def process_text(text: str, doc_type: str, source_file: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Core pipeline: load models → extract skills → extract NER → normalize → dedupe → summary.
+    Returns a dict ready to be passed to jsonify().
+    """
+    nlp_model, skill_model = load_models()
+
+    entities = []
+    if skill_model:
+        entities.extend(extract_skills_skillner(text, skill_model))
+    else:
+        entities.extend(extract_skills_fallback(text, nlp_model))
+    entities.extend(extract_entities_spacy(text, nlp_model))
+
+    for entity in entities:
+        entity["canonical"] = normalize_canonical(entity, entity.get("type", ""))
+
+    seen: set = set()
+    unique_entities = []
+    for entity in entities:
+        canonical = entity["canonical"]
+        if canonical not in seen:
+            seen.add(canonical)
+            unique_entities.append(entity)
+
+    skill_count = sum(1 for e in unique_entities if e["type"] == "skill")
+    ner_count = sum(1 for e in unique_entities if e["type"] == "ner")
+
+    if source_file:
+        summary = f"Extracted {skill_count} skills and {ner_count} named entities from {doc_type.lower()} file '{source_file}'"
+    else:
+        summary = f"Extracted {skill_count} skills and {ner_count} named entities from {doc_type.lower()}"
+
+    result: Dict[str, Any] = {
+        "entities": unique_entities,
+        "summary": summary,
+        "extractor": "spacy+skillner",
+        "extractor_version": "1.0",
+        "doc_type": doc_type,
+    }
+    if source_file is not None:
+        result["source_file"] = source_file
+        result["extracted_text_length"] = len(text)
+    return result
+
+
 @app.route('/health', methods=['GET'])
 def health():
     """Health check endpoint"""
@@ -231,49 +292,8 @@ def extract():
         
         if not text or not text.strip():
             return jsonify({"error": "Empty text"}), 400
-        
-        # Load models if not already loaded
-        nlp_model, skill_model = load_models()
-        
-        # Extract entities
-        entities = []
-        
-        # 1. Extract skills using SkillNER (or fallback)
-        if skill_model:
-            skills = extract_skills_skillner(text, skill_model)
-        else:
-            skills = extract_skills_fallback(text, nlp_model)
-        entities.extend(skills)
-        
-        # 2. Extract NER entities using spaCy
-        ner_entities = extract_entities_spacy(text, nlp_model)
-        entities.extend(ner_entities)
-        
-        # 3. Add canonical format
-        for entity in entities:
-            entity["canonical"] = normalize_canonical(entity, entity.get("type", ""))
-        
-        # 4. Deduplicate by canonical (keep first occurrence)
-        seen = set()
-        unique_entities = []
-        for entity in entities:
-            canonical = entity["canonical"]
-            if canonical not in seen:
-                seen.add(canonical)
-                unique_entities.append(entity)
-        
-        # 5. Generate summary
-        skill_count = sum(1 for e in unique_entities if e["type"] == "skill")
-        ner_count = sum(1 for e in unique_entities if e["type"] == "ner")
-        summary = f"Extracted {skill_count} skills and {ner_count} named entities from {doc_type.lower()}"
-        
-        return jsonify({
-            "entities": unique_entities,
-            "summary": summary,
-            "extractor": "spacy+skillner",
-            "extractor_version": "1.0",
-            "doc_type": doc_type
-        })
+
+        return jsonify(process_text(text, doc_type))
     
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -308,6 +328,70 @@ def extract_batch():
         
         return jsonify({"results": results})
     
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+def extract_text_from_pdf(file_bytes: bytes) -> str:
+    """Extract plain text from PDF bytes using pdfplumber."""
+    if not PDFPLUMBER_AVAILABLE:
+        raise RuntimeError("pdfplumber is not installed. Run: pip install pdfplumber")
+    pages = []
+    with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+        for page in pdf.pages:
+            text = page.extract_text()
+            if text:
+                pages.append(text)
+    return "\n".join(pages)
+
+
+def extract_text_from_docx(file_bytes: bytes) -> str:
+    """Extract plain text from DOCX bytes using python-docx."""
+    if not DOCX_AVAILABLE:
+        raise RuntimeError("python-docx is not installed. Run: pip install python-docx")
+    doc = DocxDocument(io.BytesIO(file_bytes))
+    return "\n".join(para.text for para in doc.paragraphs if para.text.strip())
+
+
+@app.route('/extract/file', methods=['POST'])
+def extract_file():
+    """
+    Extract entities from an uploaded PDF or DOCX resume file.
+
+    Request: multipart/form-data
+      - file: the resume file (.pdf or .docx)
+      - doc_type: 'RESUME' | 'JD' (optional, default 'RESUME')
+
+    Response: same schema as POST /extract
+    """
+    try:
+        if 'file' not in request.files:
+            return jsonify({"error": "Missing 'file' field in multipart form"}), 400
+
+        uploaded_file = request.files['file']
+        filename = uploaded_file.filename or ""
+        doc_type = request.form.get('doc_type', 'RESUME')
+
+        file_bytes = uploaded_file.read()
+        if not file_bytes:
+            return jsonify({"error": "Uploaded file is empty"}), 400
+
+        # Detect file type by extension (case-insensitive)
+        lower_name = filename.lower()
+        if lower_name.endswith('.pdf'):
+            text = extract_text_from_pdf(file_bytes)
+        elif lower_name.endswith('.docx'):
+            text = extract_text_from_docx(file_bytes)
+        else:
+            return jsonify({"error": f"Unsupported file type: '{filename}'. Only .pdf and .docx are supported."}), 415
+
+        if not text or not text.strip():
+            return jsonify({"error": "Could not extract any text from the uploaded file"}), 422
+
+        return jsonify(process_text(text, doc_type, source_file=filename))
+
+    except RuntimeError as e:
+        return jsonify({"error": str(e)}), 501
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

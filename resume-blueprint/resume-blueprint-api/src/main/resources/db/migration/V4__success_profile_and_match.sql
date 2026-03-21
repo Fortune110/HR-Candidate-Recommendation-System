@@ -49,7 +49,7 @@ create index if not exists idx_success_profile_tag_canonical
 -- ------------------------------------------------------------
 create table if not exists rb_resume_project (
   project_id bigserial primary key,
-  resume_document_id bigint not null references rb_document(document_id) on delete cascade,
+  resume_document_id bigint not null references public.rb_document(document_id) on delete cascade,
   project_name text,                        -- extracted project name
   project_text text not null,               -- project description text
   start_date text,                          -- optional: '2020-01' format
@@ -85,7 +85,7 @@ create index if not exists idx_resume_project_tag_canonical
 -- ------------------------------------------------------------
 create table if not exists rb_match_run (
   match_run_id bigserial primary key,
-  resume_document_id bigint not null references rb_document(document_id),
+  resume_document_id bigint not null references public.rb_document(document_id),
   target text not null,                     -- 'internal' | 'external' | 'both'
   role_filter text,                         -- optional: filter by role
   level_filter text,                        -- optional: filter by level

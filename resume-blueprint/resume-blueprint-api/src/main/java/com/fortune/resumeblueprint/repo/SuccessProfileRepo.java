@@ -52,7 +52,7 @@ public class SuccessProfileRepo {
             join rb_success_profile sp on sp.profile_id = spt.profile_id
             where sp.source = ?
               and sp.role = ?
-              and (? is null or sp.level = ?)
+              and (cast(? as text) is null or sp.level = ?)
             group by spt.canonical
             order by total_weight desc
             """;
@@ -73,7 +73,7 @@ public class SuccessProfileRepo {
             from rb_success_profile
             where source = ?
               and role = ?
-              and (? is null or level = ?)
+              and (cast(? as text) is null or level = ?)
             """;
         return jdbc.queryForList(sql, Long.class, source, role, level, level);
     }
