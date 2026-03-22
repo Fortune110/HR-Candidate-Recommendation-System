@@ -1,0 +1,83 @@
+services:
+
+  # ── PostgreSQL ──────────────────────────────────────────────
+  postgres:
+    image: postgres:16
+    container_name: rb_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: resume_blueprint_db
+      POSTGRES_USER: rb_user
+      POSTGRES_PASSWORD: rb_password
+    volumes:
+      - rb_pgdata:/var/lib/postgresql/data
+    ports:
+      - "55434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rb_user -d resume_blueprint_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Python extract service ───────────────────────────────────
+  extract-service:
+    build:
+      context: ./talent-archive-core/extract-service
+      dockerfile: Dockerfile
+    container_name: rb_extract
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      FLASK_ENV: production
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5000/health')\""]
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3
+
+  # ── Spring Boot API ─────────────────────────────────────────
+  api:
+    build:
+      context: ./resume-blueprint/resume-blueprint-api
+      dockerfile: Dockerfile
+    container_name: rb_api
+    restart: unless-stopped
+    ports:
+      - "18080:18080"
+    environment:
+      # Override hardcoded 127.0.0.1 URLs with Docker service names
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/resume_blueprint_db
+      SPRING_DATASOURCE_USERNAME: rb_user
+      SPRING_DATASOURCE_PASSWORD: rb_password
+      EXTRACT_SERVICE_URL: http://extract-service:5000
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      extract-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:18080/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      start_period: 90s
+      retries: 5
+
+  # ── React frontend (nginx) ───────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: rb_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  rb_pgdata:

@@ -53,7 +53,30 @@ An AI-powered HR candidate recommendation system that parses job descriptions, e
 
 ---
 
-## Local Setup
+## Quick Start (Docker)
+
+The fastest way to run everything with a single command:
+
+```bash
+# 1. Copy env file and add your OpenAI key (optional — skills still extracted without it)
+cp .env.example .env
+
+# 2. Build and start all 4 services
+docker compose up --build
+```
+
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost |
+| Spring Boot API | http://localhost:18080 |
+| Python Extract | http://localhost:5000 |
+| PostgreSQL | `127.0.0.1:55434` |
+
+> First build takes ~5 minutes (Maven + spaCy model download). Subsequent starts are fast.
+
+---
+
+## Local Setup (Manual)
 
 ### Prerequisites
 

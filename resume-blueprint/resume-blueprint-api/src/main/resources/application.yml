@@ -13,7 +13,7 @@ spring:
 
 extract:
   service:
-    url: http://127.0.0.1:5000
+    url: ${EXTRACT_SERVICE_URL:http://127.0.0.1:5000}
 
 openai:
   apiKey: ${OPENAI_API_KEY:}
