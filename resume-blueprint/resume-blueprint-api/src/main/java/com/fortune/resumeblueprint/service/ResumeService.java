@@ -59,7 +59,20 @@ public class ResumeService {
             }
         }
 
-        return new AnalyzeResponse(runId, out.mode(), out.summary(), out.keywords(), out.selectedTerms(), out.newTerms());
+        // Compute seniority and persist to rb_candidate
+        String candidateId = repo.findEntityId(documentId);
+        if (candidateId != null) {
+            String seniority = computeSeniority(out.experienceYears());
+            repo.upsertCandidateSeniority(candidateId, out.experienceYears(), seniority);
+        }
+
+        return new AnalyzeResponse(runId, out.mode(), out.summary(), out.keywords(), out.selectedTerms(), out.newTerms(), out.experienceYears());
+    }
+
+    private String computeSeniority(Integer years) {
+        if (years == null || years < 3) return "Junior";
+        if (years < 7) return "Mid";
+        return "Senior";
     }
 
     public AnalyzeResponse analyzeBaseline(long documentId, String resumeText, long baselineSetId) {
@@ -91,7 +104,7 @@ public class ResumeService {
             reviewRepo.upsertPending(baselineSetId, runId, k.term(), k.normalized(), k.score(), k.evidence());
         }
 
-        return new AnalyzeResponse(runId, out.mode(), out.summary(), out.keywords(), out.selectedTerms(), out.newTerms());
+        return new AnalyzeResponse(runId, out.mode(), out.summary(), out.keywords(), out.selectedTerms(), out.newTerms(), out.experienceYears());
     }
 
     public Optional<ResumeDocumentResponse> findDocument(long documentId) {

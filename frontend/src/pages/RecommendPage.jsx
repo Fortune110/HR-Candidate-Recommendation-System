@@ -1,11 +1,34 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 
 export default function RecommendPage() {
   const [jdText, setJdText] = useState('')
   const [limit, setLimit] = useState(10)
   const [results, setResults] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [error, setError] = useState(null)
+  const fileInputRef = useRef(null)
+
+  async function handleFileUpload(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    setError(null)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch('/api/jd/upload-file', { method: 'POST', body: formData })
+      if (!res.ok) throw new Error(`File upload failed — HTTP ${res.status}`)
+      const data = await res.json()
+      setJdText(data.text || '')
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setUploading(false)
+      // reset so the same file can be re-selected
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -40,12 +63,37 @@ export default function RecommendPage() {
       <h1 className="text-2xl font-semibold text-gray-800 mb-6">JD Match & Recommend</h1>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* File upload zone */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Upload JD File (optional)</label>
+          <label
+            className={`flex items-center justify-center gap-2 w-full border-2 border-dashed rounded-lg px-4 py-4 cursor-pointer transition-colors
+              ${uploading ? 'border-blue-300 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'}`}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.docx"
+              className="hidden"
+              onChange={handleFileUpload}
+              disabled={uploading}
+            />
+            {uploading ? (
+              <span className="text-sm text-blue-600">Extracting text from file...</span>
+            ) : (
+              <span className="text-sm text-gray-500">
+                Drop a <span className="font-medium">.pdf</span> or <span className="font-medium">.docx</span> file here, or click to browse — text will auto-fill below
+              </span>
+            )}
+          </label>
+        </div>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Job Description</label>
           <textarea
             value={jdText}
             onChange={e => setJdText(e.target.value)}
-            placeholder="Paste the job description here..."
+            placeholder="Paste the job description here, or upload a file above..."
             rows={8}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
           />

@@ -388,7 +388,9 @@ def extract_file():
         if not text or not text.strip():
             return jsonify({"error": "Could not extract any text from the uploaded file"}), 422
 
-        return jsonify(process_text(text, doc_type, source_file=filename))
+        result = process_text(text, doc_type, source_file=filename)
+        result["raw_text"] = text
+        return jsonify(result)
 
     except RuntimeError as e:
         return jsonify({"error": str(e)}), 501

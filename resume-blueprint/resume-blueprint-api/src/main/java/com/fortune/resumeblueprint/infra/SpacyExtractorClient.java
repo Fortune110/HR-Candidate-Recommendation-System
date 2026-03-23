@@ -5,9 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.ArrayList;
@@ -97,6 +100,40 @@ public class SpacyExtractorClient {
         }
     }
     
+    /**
+     * Upload a PDF or DOCX file to the extract service and return the raw extracted text.
+     * Calls POST /extract/file and reads the "raw_text" field from the response.
+     */
+    public String extractFileText(byte[] fileBytes, String originalFilename, String docType) {
+        String filename = originalFilename != null ? originalFilename : "upload.bin";
+        MultipartBodyBuilder builder = new MultipartBodyBuilder();
+        builder.part("file", new ByteArrayResource(fileBytes) {
+            @Override
+            public String getFilename() { return filename; }
+        }).contentType(filename.toLowerCase().endsWith(".pdf")
+                ? MediaType.APPLICATION_PDF
+                : MediaType.APPLICATION_OCTET_STREAM);
+        builder.part("doc_type", docType != null ? docType : "JD");
+
+        try {
+            String raw = WebClient.create(extractServiceUrl)
+                    .post()
+                    .uri("/extract/file")
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .body(BodyInserters.fromMultipartData(builder.build()))
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+            if (raw == null || raw.isBlank()) {
+                return "";
+            }
+            JsonNode response = om.readTree(raw);
+            return response.path("raw_text").asText("");
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to extract text from file via Python service: " + e.getMessage(), e);
+        }
+    }
+
     /**
      * Health check for extraction service
      */

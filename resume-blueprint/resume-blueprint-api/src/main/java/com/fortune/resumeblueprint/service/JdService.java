@@ -3,11 +3,13 @@ package com.fortune.resumeblueprint.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fortune.resumeblueprint.api.dto.JdAnalyzeResponse;
+import com.fortune.resumeblueprint.infra.SpacyExtractorClient;
 import com.fortune.resumeblueprint.repo.JdRepo;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.nio.charset.StandardCharsets;
@@ -22,6 +24,7 @@ import java.util.Map;
 public class JdService {
 
     private final JdRepo jdRepo;
+    private final SpacyExtractorClient spacyClient;
     private final WebClient webClient;
     private final ObjectMapper om = new ObjectMapper();
 
@@ -48,13 +51,24 @@ Job description:
 """;
 
     public JdService(JdRepo jdRepo,
+                     SpacyExtractorClient spacyClient,
                      @Value("${openai.apiKey:}") String apiKey) {
         this.jdRepo = jdRepo;
+        this.spacyClient = spacyClient;
         this.webClient = WebClient.builder()
                 .baseUrl("https://api.openai.com/v1")
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
+    }
+
+    public String extractTextFromFile(MultipartFile file) {
+        try {
+            String filename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "upload.bin";
+            return spacyClient.extractFileText(file.getBytes(), filename, "JD");
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to extract text from uploaded JD file: " + e.getMessage(), e);
+        }
     }
 
     public JdAnalyzeResponse analyze(String text) {

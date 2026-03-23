@@ -35,6 +35,7 @@ You are a recruitment analysis assistant. Please extract "reusable keywords/skil
 Output must be JSON with fixed fields:
 {
   "summary": "...",
+  "experience_years": null,
   "keywords": [
     {"term":"...", "normalized":"...", "score":0.0, "evidence":"..."}
   ],
@@ -46,6 +47,7 @@ Rules:
 - score: 0~1, higher for more certainty
 - evidence: extract a sentence from the resume that best proves this term
 - keywords: maximum 30, sorted by importance
+- experience_years: integer, total years of relevant work experience inferred from dates/roles; null if not determinable
 Resume text:
 """ + resumeText;
 
@@ -116,12 +118,15 @@ Resume text:
         }
         if (jsonText == null || jsonText.isBlank()) {
             // Fallback: if output_text is not obtained, return empty structure
-            return new AnalyzeResponse(0L, mode, "", List.of(), List.of(), List.of());
+            return new AnalyzeResponse(0L, mode, "", List.of(), List.of(), List.of(), null);
         }
 
         try {
             JsonNode j = om.readTree(jsonText);
             String summary = j.path("summary").asText("");
+
+            JsonNode expNode = j.path("experience_years");
+            Integer experienceYears = (!expNode.isMissingNode() && !expNode.isNull()) ? expNode.asInt() : null;
 
             List<AnalyzeResponse.KeywordItem> keywords = new ArrayList<>();
             for (JsonNode k : j.path("keywords")) {
@@ -148,9 +153,9 @@ Resume text:
                 ));
             }
 
-            return new AnalyzeResponse(0L, mode, summary, keywords, selected, newTerms);
+            return new AnalyzeResponse(0L, mode, summary, keywords, selected, newTerms, experienceYears);
         } catch (Exception e) {
-            return new AnalyzeResponse(0L, mode, "", List.of(), List.of(), List.of());
+            return new AnalyzeResponse(0L, mode, "", List.of(), List.of(), List.of(), null);
         }
     }
 }

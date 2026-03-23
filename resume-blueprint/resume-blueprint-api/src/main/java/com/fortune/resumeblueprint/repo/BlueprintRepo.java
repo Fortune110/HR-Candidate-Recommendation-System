@@ -80,6 +80,51 @@ public class BlueprintRepo {
         return rows.stream().findFirst();
     }
 
+    public String findEntityId(long documentId) {
+        List<String> rows = jdbc.query(
+                "select entity_id from rb_document where document_id = ?",
+                (rs, rn) -> rs.getString("entity_id"),
+                documentId
+        );
+        return rows.isEmpty() ? null : rows.get(0);
+    }
+
+    public void upsertCandidateSeniority(String candidateId, Integer experienceYears, String seniorityLevel) {
+        String sql = """
+        insert into rb_candidate(candidate_id, stage, experience_years, seniority_level)
+        values (?, 'new', ?, ?)
+        on conflict (candidate_id)
+        do update set experience_years = excluded.experience_years,
+                      seniority_level  = excluded.seniority_level,
+                      updated_at       = now()
+        """;
+        jdbc.update(sql, candidateId, experienceYears, seniorityLevel);
+    }
+
+    public List<CandidateListRow> listCandidates(int limit, int offset) {
+        String sql = """
+        select d.document_id,
+               d.entity_id    as candidate_id,
+               d.entity_type,
+               d.created_at,
+               c.experience_years,
+               c.seniority_level
+        from rb_document d
+        left join rb_candidate c on c.candidate_id = d.entity_id
+        where d.entity_type = 'candidate_resume'
+        order by d.document_id desc
+        limit ? offset ?
+        """;
+        return jdbc.query(sql, (rs, rn) -> new CandidateListRow(
+                rs.getLong("document_id"),
+                rs.getString("candidate_id"),
+                rs.getString("entity_type"),
+                rs.getObject("created_at", OffsetDateTime.class),
+                rs.getObject("experience_years") != null ? rs.getInt("experience_years") : null,
+                rs.getString("seniority_level")
+        ), limit, offset);
+    }
+
     public List<DocumentSummaryRow> listDocuments(int limit, int offset) {
         String sql = """
         select document_id, entity_type, entity_id, content_hash, created_at
@@ -95,6 +140,15 @@ public class BlueprintRepo {
                 rs.getObject("created_at", OffsetDateTime.class)
         ), limit, offset);
     }
+
+    public record CandidateListRow(
+            long documentId,
+            String candidateId,
+            String entityType,
+            OffsetDateTime createdAt,
+            Integer experienceYears,
+            String seniorityLevel
+    ) {}
 
     public record DocumentRow(
             long documentId,

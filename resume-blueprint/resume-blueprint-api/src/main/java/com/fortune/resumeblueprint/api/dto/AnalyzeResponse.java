@@ -8,7 +8,8 @@ public record AnalyzeResponse(
         String summary,
         List<KeywordItem> keywords,
         List<String> selectedTerms,
-        List<KeywordItem> newTerms
+        List<KeywordItem> newTerms,
+        Integer experienceYears
 ) {
     public record KeywordItem(
             String term,
