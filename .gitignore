@@ -8,3 +8,8 @@ build/
 .env
 *.bak
 
+# Claude Code local config
+.claude/
+
+# Temporary debug scripts (PowerShell)
+test_*.ps1
