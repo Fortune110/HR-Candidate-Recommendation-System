@@ -16,10 +16,10 @@ create table if not exists rb_candidate (
 );
 
 -- Index for stage filtering and queries
-create index if not exists idx_candidate_stage 
+create index if not exists idx_candidate_stage
   on rb_candidate(stage) where stage is not null;
 
-create index if not exists idx_candidate_updated 
+create index if not exists idx_candidate_updated
   on rb_candidate(stage_updated_at desc) where stage_updated_at is not null;
 
 -- ------------------------------------------------------------
@@ -33,20 +33,19 @@ create table if not exists rb_candidate_stage_history (
   changed_by text not null,                 -- operator/user ID
   note text,                                -- optional note
   changed_at timestamptz not null default now(),
-  -- Prevent duplicate history entries (idempotency)
-  unique(candidate_id, to_stage, changed_at, changed_by)
+  constraint uq_stage_history_idempotency unique(candidate_id, to_stage, changed_at, changed_by)
 );
 
 -- Index for candidate history queries (most common: get history for a candidate)
-create index if not exists idx_candidate_stage_history_candidate 
+create index if not exists idx_candidate_stage_history_candidate
   on rb_candidate_stage_history(candidate_id, changed_at desc);
 
 -- Index for stage change queries (analytics)
-create index if not exists idx_candidate_stage_history_stage 
+create index if not exists idx_candidate_stage_history_stage
   on rb_candidate_stage_history(from_stage, to_stage, changed_at);
 
 -- Index for changed_by queries (audit)
-create index if not exists idx_candidate_stage_history_changed_by 
+create index if not exists idx_candidate_stage_history_changed_by
   on rb_candidate_stage_history(changed_by, changed_at desc);
 
 -- ------------------------------------------------------------
