@@ -19,7 +19,7 @@ services:
     container_name: resume_blueprint_extract
     restart: unless-stopped
     ports:
-      - "5000:5000"
+      - "5600:5000"
     environment:
       - FLASK_ENV=production
     healthcheck:
