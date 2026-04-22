@@ -61,7 +61,7 @@ function Invoke-ApiCall {
         }
         
         if ($Body) {
-            $params.Body = ($Body | ConvertTo-Json -Depth 10 -Compress)
+            $params.Body = ($Body | ConvertTo-Json -Depth 3 -Compress)
         }
         
         $response = Invoke-WebRequest @params
@@ -227,7 +227,7 @@ function Test-HealthEndpoint {
 function Test-ResumeIngest {
     Write-TestStep "Testing resume ingestion..." "INFO"
     
-    $resumeText = Get-Content "samples\resume_001.txt" -Raw
+    $resumeText = [string](Get-Content "samples\resume_001.txt" -Raw)
     $body = @{
         candidateId = "test_candidate_001"
         text = $resumeText
@@ -258,7 +258,7 @@ function Test-Extract {
     
     Write-TestStep "Testing extract service..." "INFO"
     
-    $resumeText = Get-Content "samples\resume_001.txt" -Raw
+    $resumeText = [string](Get-Content "samples\resume_001.txt" -Raw)
     $body = @{
         documentId = $DocumentId
         text = $resumeText
