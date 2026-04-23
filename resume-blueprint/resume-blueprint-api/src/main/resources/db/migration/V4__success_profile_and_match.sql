@@ -3,8 +3,6 @@
 -- Purpose: Compare resume tags with success cohort tags
 -- ============================================================
 
-set search_path to rb, public;
-
 -- ------------------------------------------------------------
 -- Success Profile: Internal/External success cohort
 -- ------------------------------------------------------------
