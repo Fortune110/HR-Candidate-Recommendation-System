@@ -6,12 +6,10 @@ import com.fortune.resumeblueprint.api.dto.AnalyzeResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.*;
 
-@Component
 public class OpenAIResponsesClient implements LlmClient {
 
     private final WebClient webClient;
@@ -20,7 +18,7 @@ public class OpenAIResponsesClient implements LlmClient {
     @Value("${openai.model:gpt-4o-mini}")
     private String model;
 
-    public OpenAIResponsesClient(@Value("${openai.apiKey:}") String apiKey) {
+    public OpenAIResponsesClient(String apiKey) {
         this.webClient = WebClient.builder()
                 .baseUrl("https://api.openai.com/v1")
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
