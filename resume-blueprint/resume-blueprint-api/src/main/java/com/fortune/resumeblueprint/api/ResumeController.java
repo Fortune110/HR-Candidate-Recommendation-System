@@ -1,6 +1,5 @@
 package com.fortune.resumeblueprint.api;
 
-import com.fortune.resumeblueprint.api.dto.AnalyzeRequest;
 import com.fortune.resumeblueprint.api.dto.AnalyzeResponse;
 import com.fortune.resumeblueprint.api.dto.ResumeDocumentResponse;
 import com.fortune.resumeblueprint.api.dto.ResumeIngestRequest;
@@ -86,15 +85,19 @@ public class ResumeController {
     }
 
     @PostMapping("/{documentId}/analyze/bootstrap")
-    public AnalyzeResponse analyzeBootstrap(@PathVariable long documentId,
-                                            @RequestBody @Valid AnalyzeRequest req) {
-        return service.analyzeBootstrap(documentId, req.text());
+    public AnalyzeResponse analyzeBootstrap(@PathVariable long documentId) {
+        String text = service.findDocument(documentId)
+                .map(doc -> doc.text())
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Resume document not found"));
+        return service.analyzeBootstrap(documentId, text);
     }
 
     @PostMapping("/{documentId}/analyze/baseline")
     public AnalyzeResponse analyzeBaseline(@PathVariable long documentId,
-                                           @RequestParam long baselineSetId,
-                                           @RequestBody @Valid AnalyzeRequest req) {
-        return service.analyzeBaseline(documentId, req.text(), baselineSetId);
+                                           @RequestParam long baselineSetId) {
+        String text = service.findDocument(documentId)
+                .map(doc -> doc.text())
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Resume document not found"));
+        return service.analyzeBaseline(documentId, text, baselineSetId);
     }
 }
