@@ -5,9 +5,12 @@ import com.fortune.resumeblueprint.api.dto.AnalyzeResponse;
 import com.fortune.resumeblueprint.api.dto.ResumeDocumentResponse;
 import com.fortune.resumeblueprint.api.dto.ResumeSummaryResponse;
 import com.fortune.resumeblueprint.infra.LlmClient;
+import com.fortune.resumeblueprint.infra.SpacyExtractorClient;
 import com.fortune.resumeblueprint.repo.BaselineRepo;
 import com.fortune.resumeblueprint.repo.BlueprintRepo;
 import com.fortune.resumeblueprint.repo.ReviewRepo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -20,25 +23,40 @@ import java.util.Optional;
 
 @Service
 public class ResumeService {
+
+    private static final Logger log = LoggerFactory.getLogger(ResumeService.class);
+
     private final BlueprintRepo repo;
     private final BaselineRepo baselineRepo;
     private final ReviewRepo reviewRepo;
     private final LlmClient llm;
+    private final SpacyExtractorClient spacyClient;
     private final ObjectMapper om = new ObjectMapper();
 
     @Value("${openai.model:gpt-4o-mini}")
     private String model;
 
-    public ResumeService(BlueprintRepo repo, BaselineRepo baselineRepo, ReviewRepo reviewRepo, LlmClient llm) {
+    public ResumeService(BlueprintRepo repo, BaselineRepo baselineRepo, ReviewRepo reviewRepo,
+                         LlmClient llm, SpacyExtractorClient spacyClient) {
         this.repo = repo;
         this.baselineRepo = baselineRepo;
         this.reviewRepo = reviewRepo;
         this.llm = llm;
+        this.spacyClient = spacyClient;
     }
 
     public long ingest(String candidateId, String text) {
         String hash = "sha256:" + sha256(text);
         return repo.saveDocument("candidate_resume", candidateId, hash, text);
+    }
+
+    public long ingestFile(String candidateId, byte[] fileBytes, String originalFilename) {
+        long start = System.currentTimeMillis();
+        String text = spacyClient.extractFileText(fileBytes, originalFilename, SpacyExtractorClient.DOC_TYPE_RESUME);
+        long documentId = ingest(candidateId, text);
+        log.info("ingestFile success: candidateId={} filename={} textLen={} durationMs={}",
+                candidateId, originalFilename, text.length(), System.currentTimeMillis() - start);
+        return documentId;
     }
 
     public AnalyzeResponse analyzeBootstrap(long documentId, String resumeText) {
@@ -59,7 +77,6 @@ public class ResumeService {
             }
         }
 
-        // Compute seniority and persist to rb_candidate
         String candidateId = repo.findEntityId(documentId);
         if (candidateId != null) {
             String seniority = computeSeniority(out.experienceYears());
@@ -88,13 +105,11 @@ public class ResumeService {
                 toJson(Map.of("mode", "baseline", "baselineSetId", baselineSetId, "baselineSize", baseline.length))
         );
 
-        // selectedTerms: Persist as tags
         for (String normalized : out.selectedTerms()) {
             long canonicalId = repo.upsertCanonicalTag(normalized, normalized);
             repo.insertExtractedTag(runId, canonicalId, 0.80);
         }
 
-        // newTerms: Persist as tags + enter review pending (not directly into baseline)
         for (AnalyzeResponse.KeywordItem k : out.newTerms()) {
             long canonicalId = repo.upsertCanonicalTag(k.normalized(), k.term());
             long extractedId = repo.insertExtractedTag(runId, canonicalId, k.score());

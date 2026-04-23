@@ -27,6 +27,9 @@ public class SpacyExtractorClient {
 
     private static final Logger log = LoggerFactory.getLogger(SpacyExtractorClient.class);
 
+    public static final String DOC_TYPE_RESUME = "RESUME";
+    public static final String DOC_TYPE_JD     = "JD";
+
     private final WebClient webClient;
     private final ObjectMapper om = new ObjectMapper();
     
@@ -51,7 +54,7 @@ public class SpacyExtractorClient {
         try {
             Map<String, Object> payload = new HashMap<>();
             payload.put("text", text);
-            payload.put("doc_type", docType != null ? docType : "RESUME");
+            payload.put("doc_type", docType != null ? docType : DOC_TYPE_RESUME);
             
             String raw = webClient.post()
                     .uri("/extract")
@@ -113,7 +116,7 @@ public class SpacyExtractorClient {
         }).contentType(filename.toLowerCase().endsWith(".pdf")
                 ? MediaType.APPLICATION_PDF
                 : MediaType.APPLICATION_OCTET_STREAM);
-        builder.part("doc_type", docType != null ? docType : "JD");
+        builder.part("doc_type", docType != null ? docType : DOC_TYPE_JD);
 
         try {
             String raw = WebClient.create(extractServiceUrl)

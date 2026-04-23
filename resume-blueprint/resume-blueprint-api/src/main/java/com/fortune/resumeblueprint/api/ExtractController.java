@@ -2,6 +2,7 @@ package com.fortune.resumeblueprint.api;
 
 import com.fortune.resumeblueprint.api.dto.ExtractRequest;
 import com.fortune.resumeblueprint.api.dto.ExtractResponse;
+import com.fortune.resumeblueprint.infra.SpacyExtractorClient;
 import com.fortune.resumeblueprint.service.ExtractService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
@@ -27,7 +28,7 @@ public class ExtractController {
         long runId = extractService.extractAndPersist(
                 req.documentId(),
                 req.text(),
-                req.docType() != null ? req.docType() : "RESUME"
+                req.docType() != null ? req.docType() : SpacyExtractorClient.DOC_TYPE_RESUME
         );
         
         return new ExtractResponse(runId, "Extraction completed successfully");

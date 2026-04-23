@@ -10,6 +10,10 @@ spring:
     enabled: true
     locations: classpath:db/migration
     schemas: public
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
 
 extract:
   service:

@@ -65,7 +65,7 @@ Job description:
     public String extractTextFromFile(MultipartFile file) {
         try {
             String filename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "upload.bin";
-            return spacyClient.extractFileText(file.getBytes(), filename, "JD");
+            return spacyClient.extractFileText(file.getBytes(), filename, SpacyExtractorClient.DOC_TYPE_JD);
         } catch (Exception e) {
             throw new RuntimeException("Failed to extract text from uploaded JD file: " + e.getMessage(), e);
         }
