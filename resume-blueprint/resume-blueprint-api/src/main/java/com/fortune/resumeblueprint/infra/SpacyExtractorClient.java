@@ -93,11 +93,11 @@ public class SpacyExtractorClient {
             return new ExtractionResult(entities, summary, extractor, version);
             
         } catch (Exception e) {
-            // Fallback: return empty result on error
+            log.error("extract() failed: docType={} error={}", docType, e.getMessage(), e);
             return new ExtractionResult(
-                    List.of(), 
-                    "Extraction error: " + e.getMessage(), 
-                    "spacy+skillner", 
+                    List.of(),
+                    "Extraction error: " + e.getMessage(),
+                    "spacy+skillner",
                     "1.0"
             );
         }

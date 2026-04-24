@@ -240,9 +240,7 @@ HR-Candidate-Recommendation-System/
 
 | # | Limitation | Planned Fix |
 |---|-----------|-------------|
-| 1 | No Docker Compose for full stack | Add root-level `docker-compose.yml` covering all 4 services |
-| 2 | Match score ignores seniority level | Use JD `level` field to filter/weight cohort profiles |
-| 3 | JD parsing requires OpenAI API key | Add local LLM fallback (Ollama) |
-| 4 | JD file upload (PDF/DOCX) not yet in UI | Wire existing `/extract/file` endpoint to RecommendPage |
-| 5 | No authentication | Add Spring Security + JWT |
-| 6 | Recommend API loads all documents in memory | Add pagination + pre-computed score cache |
+| 1 | Match score ignores seniority level | Use JD `level` field to filter/weight cohort profiles |
+| 2 | JD parsing requires OpenAI API key (resume analysis has stub fallback) | Add local LLM fallback (Ollama) for JD parsing |
+| 3 | No authentication | Add Spring Security + JWT |
+| 4 | Recommend API loads all documents in memory | Add pagination + pre-computed score cache |

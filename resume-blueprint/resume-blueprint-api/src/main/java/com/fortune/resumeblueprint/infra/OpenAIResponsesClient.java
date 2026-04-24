@@ -12,6 +12,8 @@ import java.util.*;
 
 public class OpenAIResponsesClient implements LlmClient {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(OpenAIResponsesClient.class);
+
     private final WebClient webClient;
     private final ObjectMapper om = new ObjectMapper();
 
@@ -153,6 +155,7 @@ Resume text:
 
             return new AnalyzeResponse(0L, mode, summary, keywords, selected, newTerms, experienceYears);
         } catch (Exception e) {
+            log.error("parseAnalyzeResponse() failed: mode={} error={}", mode, e.getMessage(), e);
             return new AnalyzeResponse(0L, mode, "", List.of(), List.of(), List.of(), null);
         }
     }
